@@ -3224,6 +3224,7 @@
         const STORAGE_KEY = 'riffmaster.prototype.v1';
         const autosaveDelay = 450;
         let autosaveTimer = null;
+        let rehearsalMode = null;
 
         const bitTypes = {
           SETUP: { cls: 'tag-setup', label: 'SETUP', name: '开场铺垫' },
@@ -3240,6 +3241,10 @@
           bindDelegatedEditorActions();
           bindMaterialFiltering();
           bindFloatingToolbarActions();
+          bindSelectionFloatBar();
+          bindEditorToolbarActions();
+          bindTopbarAndMaterialActions();
+          bindRehearsalFlow();
           overridePrototypeFunctions();
           updateStats();
           markSaved();
@@ -3342,6 +3347,81 @@
             }
             scheduleSave();
           });
+        }
+
+        function bindSelectionFloatBar() {
+          document.addEventListener('mouseup', event => {
+            const textEl = event.target.closest?.('.bit-text');
+            if (!textEl) return;
+            const selection = window.getSelection();
+            if (!selection || selection.toString().trim().length <= 2) return;
+            const rect = selection.getRangeAt(0).getBoundingClientRect();
+            const fb = document.getElementById('floatBar');
+            if (!fb) return;
+            fb.style.left = `${Math.max(8, Math.min(rect.left + rect.width / 2 - 140, window.innerWidth - 310))}px`;
+            fb.style.top = `${Math.max(58, rect.top + window.scrollY - 44)}px`;
+            fb.classList.add('show');
+          });
+        }
+
+        function bindEditorToolbarActions() {
+          document.querySelectorAll('.tool-btn').forEach(button => {
+            button.addEventListener('click', event => {
+              const btn = event.currentTarget;
+              const title = btn.getAttribute('title') || '';
+
+              if (title === '加粗') runCommand('bold', btn);
+              else if (title === '斜体') runCommand('italic', btn);
+              else if (title === '高亮笑点') runCommand('backColor', btn, 'rgba(245, 200, 66, 0.18)');
+              else if (title === '插入停顿标记') insertAtSelection(' [停顿] ');
+              else if (title === '插入强调') insertAtSelection('【强调】');
+              else if (title === '添加注释') insertAtSelection('（备注：这里观察观众反应）');
+              else if (title === '舞台方向') insertAtSelection(' [走向舞台中央] ');
+              else if (title === '插入音效标记') insertAtSelection(' [音效] ');
+              else if (title === '克隆段落') duplicateBit(document.querySelector('.bit-content.active')?.closest('.bit-block') || document.querySelector('.bit-block'));
+              else if (title === '撤销') document.execCommand('undo');
+              else if (title === '重做') document.execCommand('redo');
+              else if (title === '专注模式') toggleFocusMode(btn);
+              else if (title === '预览稿件') openPreview();
+              scheduleSave();
+            });
+          });
+        }
+
+        function bindTopbarAndMaterialActions() {
+          const topAiButton = document.querySelector('.tb-btn.btn-gold');
+          if (topAiButton) {
+            topAiButton.addEventListener('click', () => {
+              const fullText = Array.from(document.querySelectorAll('.bit-text')).map(el => el.innerText.trim()).filter(Boolean).join('\n');
+              sendAiPrompt(`请从整体结构优化这场节目，并找出最值得加强的笑点：\n${fullText}`);
+            });
+          }
+
+          document.querySelectorAll('.lp-action, .new-material-btn').forEach(button => {
+            button.addEventListener('click', () => {
+              const title = prompt('记录一个新灵感：');
+              if (!title || !title.trim()) return;
+              addMaterial(title.trim());
+            });
+          });
+        }
+
+        function bindRehearsalFlow() {
+          const modal = document.getElementById('performModal');
+          if (!modal) return;
+
+          modal.querySelectorAll('.modal-box > div[style*="grid"] > div').forEach(card => {
+            card.addEventListener('click', () => {
+              rehearsalMode = card.querySelector('div:nth-child(2)')?.textContent.trim() || '独自排练';
+            });
+          });
+
+          const start = modal.querySelector('.btn-purple');
+          if (start) {
+            start.addEventListener('click', () => {
+              showToast(rehearsalMode ? `已进入${rehearsalMode}` : '请先选择排练模式');
+            });
+          }
         }
 
         function overridePrototypeFunctions() {
@@ -3569,8 +3649,81 @@
                 });
               });
             }
+            const copy = row.querySelector('[data-copy-ai]');
+            if (copy) {
+              copy.addEventListener('click', () => {
+                const content = action.insertText || stripHtml(action.insertHtml || text);
+                navigator.clipboard?.writeText(content);
+                showToast('已复制 AI 建议');
+              });
+            }
           }
           list.insertBefore(row, typing);
+        }
+
+        function addMaterial(title) {
+          const group = Array.from(document.querySelectorAll('.mat-group')).find(item => item.querySelector('.mat-group-label')?.textContent.trim() === '灵感记录');
+          if (!group) return;
+          const item = document.createElement('div');
+          item.className = 'mat-item fade-in';
+          item.innerHTML = `
+            <div class="mat-icon" style="background:rgba(155,109,255,0.1);">
+              <i class="fa-solid fa-bolt" style="color:var(--purple);font-size:11px;"></i>
+            </div>
+            <div class="mat-body">
+              <div class="mat-name">${escapeHtml(title)}</div>
+              <div class="mat-meta"><span>随手记</span><span>·</span><span>刚刚</span></div>
+            </div>
+            <span class="mat-badge" style="background:rgba(155,109,255,0.12);color:var(--purple);">新</span>`;
+          const label = group.querySelector('.mat-group-label');
+          label.after(item);
+          filterMaterials();
+          showToast('已记录新灵感');
+        }
+
+        function runCommand(command, button, value = null) {
+          document.execCommand(command, false, value);
+          button.classList.toggle('on');
+        }
+
+        function insertAtSelection(text) {
+          document.execCommand('insertText', false, text);
+        }
+
+        function toggleFocusMode(button) {
+          const enabled = document.body.dataset.focusMode !== 'on';
+          document.body.dataset.focusMode = enabled ? 'on' : 'off';
+          button.classList.toggle('on', enabled);
+          ['.library-panel', '.right-panel', '.icon-rail', '.statusbar'].forEach(selector => {
+            const el = document.querySelector(selector);
+            if (el) el.style.display = enabled ? 'none' : '';
+          });
+          showToast(enabled ? '已进入专注模式' : '已退出专注模式');
+        }
+
+        function openPreview() {
+          const existing = document.getElementById('previewModal');
+          if (existing) existing.remove();
+          const modal = document.createElement('div');
+          modal.id = 'previewModal';
+          modal.className = 'modal-bg open';
+          const title = document.querySelector('.show-title-input')?.value || '未命名节目';
+          const content = Array.from(document.querySelectorAll('.bit-block')).map((block, index) => {
+            const type = block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT';
+            const text = block.querySelector('.bit-text')?.innerText.trim() || '';
+            return `<div style="margin-bottom:16px;"><div style="font-size:11px;color:var(--purple);font-weight:800;margin-bottom:4px;">${String(index + 1).padStart(2, '0')} · ${escapeHtml(type)}</div><div style="font-size:14px;line-height:1.8;color:var(--text-soft);">${escapeHtml(text)}</div></div>`;
+          }).join('');
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:720px;max-height:82vh;overflow:auto;">
+              <button class="modal-close" data-close-preview="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">${escapeHtml(title)}</div>
+              <div class="modal-sub">预览稿件 · 适合排练前通读</div>
+              ${content}
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close-preview]')) modal.remove();
+          });
         }
 
         function activateChatTab() {
@@ -3737,6 +3890,315 @@
           document.addEventListener('DOMContentLoaded', initEnhancedPrototype);
         } else {
           initEnhancedPrototype();
+        }
+      })();
+    </script>
+    <script>
+      (() => {
+        const VERSION_KEY = 'riffmaster.prototype.versions.v1';
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        const STOP_WORDS = new Set(['我', '你', '他', '她', '它', '的', '了', '是', '在', '和', '就', '都', '也', '但', '又', '说', '这', '那', '一个', '我们', '你们', '北京']);
+        let analysisTimer = null;
+
+        function initCreationLoopFeatures() {
+          bindVersionHistory();
+          bindExport();
+          bindMaterialReuse();
+          bindDynamicAnalysis();
+          bindAiTipActions();
+          ensureInitialVersion();
+          refreshTextAnalysis();
+        }
+
+        function bindVersionHistory() {
+          const historyButton = document.querySelector('.rail-btn[title="历史版本"]');
+          if (historyButton) {
+            historyButton.addEventListener('click', openVersionModal);
+          }
+
+          document.addEventListener('keydown', event => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+              event.preventDefault();
+              saveVersion('手动保存');
+              showToast('已保存一个历史版本');
+            }
+          });
+        }
+
+        function bindExport() {
+          const previewButton = document.querySelector('.tool-btn[title="预览稿件"]');
+          if (!previewButton) return;
+          previewButton.addEventListener('dblclick', exportMarkdown);
+
+          const userAvatar = document.querySelector('.user-av');
+          if (userAvatar) {
+            userAvatar.title = '双击导出 Markdown';
+            userAvatar.addEventListener('dblclick', exportMarkdown);
+          }
+        }
+
+        function bindMaterialReuse() {
+          document.addEventListener('click', event => {
+            const item = event.target.closest?.('.mat-item');
+            if (!item) return;
+            document.querySelectorAll('.mat-item').forEach(el => el.classList.remove('on'));
+            item.classList.add('on');
+            const name = item.querySelector('.mat-name')?.textContent.trim();
+            if (!name) return;
+            const input = document.getElementById('mainInput');
+            if (input && !input.value.trim()) {
+              input.value = `这让我想到「${name}」——`;
+            }
+          });
+        }
+
+        function bindDynamicAnalysis() {
+          document.addEventListener('input', event => {
+            if (event.target.matches?.('.bit-text[contenteditable="true"], .show-title-input')) {
+              clearTimeout(analysisTimer);
+              analysisTimer = setTimeout(refreshTextAnalysis, 500);
+            }
+          });
+
+          document.addEventListener('click', event => {
+            if (event.target.closest?.('.add-bit-btn, .bit-act-btn, .reaction-btn, [data-insert-ai]')) {
+              setTimeout(refreshTextAnalysis, 120);
+            }
+          });
+        }
+
+        function bindAiTipActions() {
+          document.querySelectorAll('.ai-tip').forEach((tip, index) => {
+            tip.addEventListener('click', () => {
+              const targetBit = document.querySelectorAll('.bit-block')[Math.min(index, document.querySelectorAll('.bit-block').length - 1)];
+              if (targetBit) {
+                targetBit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetBit.querySelector('.bit-content')?.classList.add('active');
+              }
+              const title = tip.querySelector('.ai-tip-title')?.textContent.trim() || 'AI 建议';
+              const desc = tip.querySelector('.ai-tip-desc')?.textContent.trim() || '';
+              if (typeof window.rpFill === 'function') {
+                window.rpFill(`请根据这条建议给出可插入修改：${title}。${desc}`);
+              }
+              document.querySelectorAll('.rp-tab')[1]?.click();
+            });
+          });
+        }
+
+        function ensureInitialVersion() {
+          const versions = readVersions();
+          if (versions.length) return;
+          saveVersion('初始版本');
+        }
+
+        function saveVersion(label) {
+          const versions = readVersions();
+          const snapshot = serializeSnapshot(label);
+          versions.unshift(snapshot);
+          localStorage.setItem(VERSION_KEY, JSON.stringify(versions.slice(0, 20)));
+          return snapshot;
+        }
+
+        function readVersions() {
+          try {
+            return JSON.parse(localStorage.getItem(VERSION_KEY) || '[]');
+          } catch {
+            return [];
+          }
+        }
+
+        function serializeSnapshot(label) {
+          return {
+            id: `version-${Date.now()}`,
+            label,
+            createdAt: new Date().toISOString(),
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bitCount: document.querySelectorAll('.bit-block').length,
+            draft: localStorage.getItem(DRAFT_KEY),
+            markdown: buildMarkdown()
+          };
+        }
+
+        function openVersionModal() {
+          saveVersion('打开历史前自动保存');
+          const versions = readVersions();
+          const existing = document.getElementById('versionModal');
+          if (existing) existing.remove();
+
+          const modal = document.createElement('div');
+          modal.id = 'versionModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:680px;max-height:82vh;overflow:auto;">
+              <button class="modal-close" data-close-version="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">历史版本</div>
+              <div class="modal-sub">最多保留最近 20 个版本，可恢复或导出任意版本</div>
+              <div style="display:flex;gap:8px;margin-bottom:14px;">
+                <button class="tb-btn btn-purple" data-save-version="1"><i class="fa-solid fa-floppy-disk"></i> 保存当前版本</button>
+                <button class="tb-btn btn-border" data-export-current="1"><i class="fa-solid fa-download"></i> 导出当前稿件</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${versions.map(version => `
+                  <div class="soft-card" style="padding:12px;border-radius:10px;background:var(--bg-raised);border:1px solid var(--border);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:13px;font-weight:800;color:var(--text-white);">${escapeHtml(version.label)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${new Date(version.createdAt).toLocaleString()} · ${version.bitCount} 段 · ${escapeHtml(version.title)}</div>
+                      </div>
+                      <button class="ca-btn ok" data-restore-version="${version.id}"><i class="fa-solid fa-clock-rotate-left"></i> 恢复</button>
+                      <button class="ca-btn" data-export-version="${version.id}"><i class="fa-solid fa-download"></i> 导出</button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close-version]')) modal.remove();
+            if (event.target.closest('[data-save-version]')) {
+              saveVersion('手动保存');
+              modal.remove();
+              openVersionModal();
+            }
+            if (event.target.closest('[data-export-current]')) exportMarkdown();
+            const restore = event.target.closest('[data-restore-version]');
+            if (restore) restoreVersion(restore.dataset.restoreVersion);
+            const exportBtn = event.target.closest('[data-export-version]');
+            if (exportBtn) {
+              const version = readVersions().find(item => item.id === exportBtn.dataset.exportVersion);
+              if (version) downloadText(`${safeFileName(version.title)}-${version.label}.md`, version.markdown);
+            }
+          });
+        }
+
+        function restoreVersion(id) {
+          const version = readVersions().find(item => item.id === id);
+          if (!version || !version.draft) return;
+          localStorage.setItem(DRAFT_KEY, version.draft);
+          showToast('版本已恢复，正在刷新');
+          setTimeout(() => location.reload(), 600);
+        }
+
+        function exportMarkdown() {
+          const title = document.querySelector('.show-title-input')?.value || 'riffmaster';
+          downloadText(`${safeFileName(title)}.md`, buildMarkdown());
+          showToast('已导出 Markdown');
+        }
+
+        function buildMarkdown() {
+          const title = document.querySelector('.show-title-input')?.value || '未命名节目';
+          const bits = Array.from(document.querySelectorAll('.bit-block')).map((block, index) => {
+            const tag = block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT';
+            const text = block.querySelector('.bit-text')?.innerText.trim() || '';
+            const score = block.querySelector('.score-val')?.textContent.trim() || '—';
+            const duration = block.querySelector('.time-badge')?.textContent.trim() || '—';
+            return `## ${String(index + 1).padStart(2, '0')} · ${tag}\n\n${text}\n\n- 预期笑声：${score}\n- 预计时长：${duration}`;
+          });
+          return `# ${title}\n\n> 由 RiffMaster 导出\n\n${bits.join('\n\n')}\n`;
+        }
+
+        function refreshTextAnalysis() {
+          const text = Array.from(document.querySelectorAll('.bit-text')).map(el => el.innerText).join(' ');
+          const words = extractKeywords(text);
+          updateWordCloud(words);
+          updateRepeatedWords(words);
+          updateAiTips(words);
+        }
+
+        function extractKeywords(text) {
+          const tokens = [];
+          const chinesePhrases = text.match(/[\u4e00-\u9fa5]{2,6}/g) || [];
+          chinesePhrases.forEach(phrase => {
+            if (!STOP_WORDS.has(phrase)) tokens.push(phrase);
+            for (let i = 0; i < phrase.length - 1; i++) {
+              const pair = phrase.slice(i, i + 2);
+              if (!STOP_WORDS.has(pair)) tokens.push(pair);
+            }
+          });
+          return tokens.reduce((map, word) => {
+            map[word] = (map[word] || 0) + 1;
+            return map;
+          }, {});
+        }
+
+        function updateWordCloud(counts) {
+          const cloud = document.querySelector('.word-cloud');
+          if (!cloud) return;
+          const palette = ['purple', 'gold', 'pink', 'teal', 'orange', 'red'];
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 14);
+          if (!sorted.length) return;
+          cloud.innerHTML = sorted.map(([word, count], index) => {
+            const color = palette[index % palette.length];
+            const size = Math.min(20, 11 + count * 2);
+            return `<span class="cloud-word" style="background:var(--${color}-dim, rgba(155,109,255,0.12));color:var(--${color});font-size:${size}px;">${escapeHtml(word)}</span>`;
+          }).join('');
+        }
+
+        function updateRepeatedWords(counts) {
+          const container = Array.from(document.querySelectorAll('.sec-title')).find(el => el.textContent.includes('重复词频警告'))?.nextElementSibling;
+          if (!container) return;
+          const repeated = Object.entries(counts).filter(([, count]) => count >= 3).sort((a, b) => b[1] - a[1]).slice(0, 3);
+          if (!repeated.length) return;
+          container.innerHTML = repeated.map(([word, count]) => {
+            const severityColor = count >= 8 ? 'var(--red)' : count >= 5 ? 'var(--orange)' : 'var(--teal)';
+            const pct = Math.min(100, count * 10);
+            return `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+                <span style="font-size:12px;color:var(--text-soft);flex:1;">「${escapeHtml(word)}」</span>
+                <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
+                  <div style="width:${pct}%;height:100%;background:${severityColor};border-radius:2px;"></div>
+                </div>
+                <span style="font-size:11px;font-weight:700;color:${severityColor};">${count}次</span>
+              </div>`;
+          }).join('');
+        }
+
+        function updateAiTips(counts) {
+          const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+          const callbackTip = Array.from(document.querySelectorAll('.ai-tip-title')).find(el => el.textContent.includes('Callback'));
+          if (callbackTip && top) {
+            callbackTip.nextElementSibling.textContent = `「${top[0]}」出现 ${top[1]} 次，适合在结尾做 Callback 回扣。`;
+          }
+        }
+
+        function downloadText(filename, content) {
+          const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9000;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        function safeFileName(text) {
+          return String(text || 'riffmaster').replace(/[\\/:*?"<>|]/g, '-').slice(0, 80);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initCreationLoopFeatures);
+        } else {
+          initCreationLoopFeatures();
         }
       })();
     </script>
