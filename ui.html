@@ -5441,5 +5441,339 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        const COMMENTS_KEY = 'riffmaster.prototype.comments.v1';
+
+        function initMaterialCommentAndAiWorkflow() {
+          bindMaterialContextMenu();
+          bindCommentWorkflow();
+          bindAiSuggestionWorkflow();
+          bindHealthCheckEntry();
+          restoreCommentBadges();
+        }
+
+        function bindMaterialContextMenu() {
+          document.addEventListener('contextmenu', event => {
+            const item = event.target.closest?.('.mat-item');
+            if (!item) return;
+            event.preventDefault();
+            openMaterialMenu(item, event.clientX, event.clientY);
+          });
+        }
+
+        function openMaterialMenu(item, x, y) {
+          document.getElementById('materialContextMenu')?.remove();
+          const menu = document.createElement('div');
+          menu.id = 'materialContextMenu';
+          menu.style.cssText = `position:fixed;left:${Math.min(x, window.innerWidth - 190)}px;top:${Math.min(y, window.innerHeight - 170)}px;width:180px;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:10px;box-shadow:0 12px 36px rgba(0,0,0,.5);z-index:9800;padding:6px;`;
+          menu.innerHTML = [
+            ['insert', '插入为新 Bit'],
+            ['fill', '填入快速输入'],
+            ['rename', '重命名素材'],
+            ['duplicate', '复制素材'],
+            ['delete', '删除素材']
+          ].map(([action, label]) => `<button data-material-action="${action}" style="width:100%;text-align:left;border:none;background:transparent;color:var(--text-soft);padding:8px 10px;border-radius:7px;cursor:pointer;font-size:12px;">${label}</button>`).join('');
+          document.body.appendChild(menu);
+          menu.addEventListener('click', event => {
+            const action = event.target.closest('[data-material-action]')?.dataset.materialAction;
+            if (!action) return;
+            runMaterialAction(action, item);
+            menu.remove();
+          });
+          setTimeout(() => {
+            document.addEventListener('click', () => menu.remove(), { once: true });
+          }, 0);
+        }
+
+        function runMaterialAction(action, item) {
+          const nameEl = item.querySelector('.mat-name');
+          const name = nameEl?.textContent.trim() || '未命名素材';
+          if (action === 'insert') {
+            window.addBit?.({ html: escapeHtml(`这让我想到「${name}」——`), type: 'OBSERVATIONAL' });
+            showToast('素材已插入稿件');
+          }
+          if (action === 'fill') {
+            const input = document.getElementById('mainInput');
+            if (input) {
+              input.value = `这让我想到「${name}」——`;
+              input.focus();
+            }
+          }
+          if (action === 'rename') {
+            const next = prompt('重命名素材', name);
+            if (next?.trim() && nameEl) {
+              nameEl.textContent = next.trim();
+              showToast('素材已重命名');
+            }
+          }
+          if (action === 'duplicate') {
+            const clone = item.cloneNode(true);
+            clone.querySelector('.mat-name').textContent = `${name} 副本`;
+            item.after(clone);
+            showToast('素材已复制');
+          }
+          if (action === 'delete') {
+            item.remove();
+            showToast('素材已删除');
+          }
+        }
+
+        function bindCommentWorkflow() {
+          document.addEventListener('click', event => {
+            const commentBtn = event.target.closest?.('.tool-btn[title="添加注释"], .fb-btn');
+            if (!commentBtn) return;
+            const text = commentBtn.textContent.trim();
+            const isToolbarComment = commentBtn.matches('.tool-btn[title="添加注释"]');
+            const isFloatComment = text.includes('备注');
+            if (!isToolbarComment && !isFloatComment) return;
+            setTimeout(() => openCommentComposer(), 40);
+          });
+
+          document.addEventListener('dblclick', event => {
+            const badge = event.target.closest?.('[data-comment-badge]');
+            if (badge) openCommentsForBit(badge.closest('.bit-block'));
+          });
+        }
+
+        function openCommentComposer() {
+          const block = document.querySelector('.bit-content.active')?.closest('.bit-block') || document.querySelector('.bit-block');
+          if (!block) return;
+          const value = prompt('给当前段落添加评论：');
+          if (!value?.trim()) return;
+          addCommentToBit(block, value.trim());
+        }
+
+        function addCommentToBit(block, text) {
+          const id = ensureBitId(block);
+          const comments = readComments();
+          comments[id] = comments[id] || [];
+          comments[id].push({
+            id: `comment-${Date.now()}`,
+            text,
+            resolved: false,
+            createdAt: new Date().toISOString()
+          });
+          localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+          renderCommentBadge(block, comments[id]);
+          showToast('评论已添加');
+        }
+
+        function openCommentsForBit(block) {
+          const id = ensureBitId(block);
+          const comments = readComments()[id] || [];
+          const modal = document.createElement('div');
+          modal.className = 'modal-bg open';
+          modal.id = 'bitCommentsModal';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:560px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">段落评论</div>
+              <div class="modal-sub">双击段落右上角评论标记可打开此列表</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${comments.map(comment => `
+                  <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:10px;">
+                    <div style="font-size:12px;color:${comment.resolved ? 'var(--text-muted)' : 'var(--text-soft)'};line-height:1.6;${comment.resolved ? 'text-decoration:line-through;' : ''}">${escapeHtml(comment.text)}</div>
+                    <div style="display:flex;align-items:center;margin-top:8px;gap:8px;">
+                      <span style="font-size:10px;color:var(--text-faint);">${new Date(comment.createdAt).toLocaleString()}</span>
+                      <button class="ca-btn ok" data-resolve-comment="${comment.id}" style="margin-left:auto;"><i class="fa-solid fa-check"></i> ${comment.resolved ? '已解决' : '解决'}</button>
+                    </div>
+                  </div>
+                `).join('') || '<div style="font-size:12px;color:var(--text-muted);">暂无评论</div>'}
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const resolveId = event.target.closest('[data-resolve-comment]')?.dataset.resolveComment;
+            if (resolveId) {
+              resolveComment(id, resolveId, block);
+              modal.remove();
+              openCommentsForBit(block);
+            }
+          });
+        }
+
+        function resolveComment(bitId, commentId, block) {
+          const comments = readComments();
+          comments[bitId] = (comments[bitId] || []).map(comment => comment.id === commentId ? { ...comment, resolved: true } : comment);
+          localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
+          renderCommentBadge(block, comments[bitId]);
+        }
+
+        function restoreCommentBadges() {
+          const comments = readComments();
+          document.querySelectorAll('.bit-block').forEach(block => {
+            const id = block.dataset.bitUid;
+            if (id && comments[id]) renderCommentBadge(block, comments[id]);
+          });
+        }
+
+        function renderCommentBadge(block, comments) {
+          block.querySelector('[data-comment-badge]')?.remove();
+          const open = comments.filter(comment => !comment.resolved).length;
+          if (!open) return;
+          const badge = document.createElement('button');
+          badge.dataset.commentBadge = '1';
+          badge.title = '双击查看评论';
+          badge.style.cssText = 'position:absolute;top:12px;right:12px;border:1px solid rgba(245,200,66,.35);background:var(--gold-dim);color:var(--gold);border-radius:16px;padding:3px 8px;font-size:10px;font-weight:900;z-index:3;';
+          badge.textContent = `${open} 评论`;
+          block.querySelector('.bit-content').appendChild(badge);
+        }
+
+        function bindAiSuggestionWorkflow() {
+          document.addEventListener('click', event => {
+            const tip = event.target.closest?.('.ai-tip');
+            if (!tip || tip.querySelector('[data-ai-suggestion-actions]')) return;
+            const actions = document.createElement('div');
+            actions.dataset.aiSuggestionActions = '1';
+            actions.style.cssText = 'display:flex;gap:6px;margin-top:8px;';
+            actions.innerHTML = `
+              <button class="ca-btn ok" data-ai-tip-action="accept"><i class="fa-solid fa-check"></i> 采纳</button>
+              <button class="ca-btn" data-ai-tip-action="regenerate"><i class="fa-solid fa-rotate"></i> 重生成</button>
+              <button class="ca-btn" data-ai-tip-action="ignore"><i class="fa-solid fa-xmark"></i> 忽略</button>`;
+            tip.querySelector('.ai-tip-body')?.appendChild(actions);
+          });
+
+          document.addEventListener('click', event => {
+            const action = event.target.closest?.('[data-ai-tip-action]')?.dataset.aiTipAction;
+            if (!action) return;
+            const tip = event.target.closest('.ai-tip');
+            if (action === 'accept') acceptAiTip(tip);
+            if (action === 'ignore') {
+              tip.style.opacity = '.45';
+              tip.style.pointerEvents = 'none';
+              showToast('已忽略建议');
+            }
+            if (action === 'regenerate') regenerateAiTip(tip);
+          });
+        }
+
+        function acceptAiTip(tip) {
+          const title = tip.querySelector('.ai-tip-title')?.textContent.trim() || 'AI 建议';
+          const desc = tip.querySelector('.ai-tip-desc')?.textContent.trim() || '';
+          if (title.includes('Hook')) {
+            window.addBit?.({ type: 'SETUP', html: '我决定离开北京那天，第一反应不是难过，是终于不用再假装自己听得懂中介说的“南北通透”了。', score: '82%', duration: '~28秒' });
+          } else if (title.includes('Callback')) {
+            window.addBit?.({ type: 'CALLBACK', html: '后来我发现，北京最像一个很贵的开放式景区。我买了十年门票，最后工作人员说：游客您好，出口在那棵歪脖子树旁边。', score: '88%', duration: '~35秒' });
+          } else if (typeof window.rpFill === 'function') {
+            window.rpFill(`请帮我采纳这条建议：${title}。${desc}`);
+            document.querySelectorAll('.rp-tab')[1]?.click();
+          }
+          tip.style.borderColor = 'rgba(62,207,176,.45)';
+          showToast('已采纳建议');
+        }
+
+        function regenerateAiTip(tip) {
+          const desc = tip.querySelector('.ai-tip-desc');
+          if (desc) {
+            desc.textContent = '已重新分析：建议把反转词提前 1 句出现，并在句尾加一个更私人化的自嘲收束。';
+          }
+          showToast('已重新生成建议');
+        }
+
+        function bindHealthCheckEntry() {
+          const meter = document.querySelector('.laugh-meter');
+          if (!meter || meter.dataset.healthBound) return;
+          meter.dataset.healthBound = '1';
+          meter.title = '点击查看稿件健康检查';
+          meter.addEventListener('click', openHealthCheckModal);
+        }
+
+        function openHealthCheckModal() {
+          const bits = getBits();
+          const issues = [];
+          const longBits = bits.filter(bit => bit.text.length > 170);
+          const emptyBits = bits.filter(bit => !bit.text.trim());
+          const callbackCount = bits.filter(bit => /CALLBACK|回扣/.test(bit.type)).length;
+          const repeated = topRepeatedWords(bits.map(bit => bit.text).join(' '));
+          if (longBits.length) issues.push(`有 ${longBits.length} 段铺垫偏长`);
+          if (emptyBits.length) issues.push(`有 ${emptyBits.length} 个空段落`);
+          if (callbackCount < 1) issues.push('缺少 Callback 回扣段落');
+          if (repeated.length) issues.push(`高频词：${repeated.map(item => `${item.word}(${item.count})`).join('、')}`);
+          if (!issues.length) issues.push('结构健康：暂无明显问题');
+
+          const modal = document.createElement('div');
+          modal.id = 'healthCheckModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:560px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">稿件健康检查</div>
+              <div class="modal-sub">基于当前文本的本地规则检查</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${issues.map((issue, index) => `
+                  <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--text-soft);">
+                    <b style="color:${index === 0 ? 'var(--gold)' : 'var(--purple)'};">${index + 1}.</b> ${escapeHtml(issue)}
+                  </div>
+                `).join('')}
+              </div>
+              <button class="tb-btn btn-purple" data-health-ai="1" style="margin-top:14px;width:100%;justify-content:center;">让 AI 生成修复建议</button>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-health-ai]')) {
+              window.rpFill?.(`请根据健康检查修复这些问题：${issues.join('；')}`);
+              document.querySelectorAll('.rp-tab')[1]?.click();
+              modal.remove();
+            }
+          });
+        }
+
+        function readComments() {
+          try {
+            return JSON.parse(localStorage.getItem(COMMENTS_KEY) || '{}');
+          } catch {
+            return {};
+          }
+        }
+
+        function ensureBitId(block) {
+          if (!block.dataset.bitUid) block.dataset.bitUid = `bit-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          return block.dataset.bitUid;
+        }
+
+        function getBits() {
+          return Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+            block,
+            type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block.querySelector('.bit-text')?.innerText.trim() || ''
+          }));
+        }
+
+        function topRepeatedWords(text) {
+          const counts = {};
+          (text.match(/[\u4e00-\u9fa5]{2,6}/g) || []).forEach(word => {
+            if (['这个', '那个', '就是', '因为', '所以', '然后'].includes(word)) return;
+            counts[word] = (counts[word] || 0) + 1;
+          });
+          return Object.entries(counts).filter(([, count]) => count >= 4).map(([word, count]) => ({ word, count })).sort((a, b) => b.count - a.count).slice(0, 3);
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initMaterialCommentAndAiWorkflow);
+        } else {
+          initMaterialCommentAndAiWorkflow();
+        }
+      })();
+    </script>
   </body>
 </html>
