@@ -4666,5 +4666,339 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        const SETTINGS_KEY = 'riffmaster.prototype.settings.v1';
+
+        function initNavigationModules() {
+          bindRailNavigationModules();
+        }
+
+        function bindRailNavigationModules() {
+          const actions = {
+            '主题地图': openThemeMapModal,
+            '笑点分析': openAnalysisDashboard,
+            '录音稿': openTranscriptModal,
+            '设置': openSettingsModal
+          };
+
+          document.querySelectorAll('.rail-btn[title]').forEach(button => {
+            const title = button.getAttribute('title');
+            if (!actions[title]) return;
+            button.addEventListener('click', () => {
+              document.querySelectorAll('.rail-btn').forEach(btn => btn.classList.remove('on'));
+              button.classList.add('on');
+              actions[title]();
+            });
+          });
+        }
+
+        function openThemeMapModal() {
+          removeModal('themeMapModal');
+          const bits = getBits();
+          const keywords = keywordStats(bits.map(bit => bit.text).join(' ')).slice(0, 12);
+          const modal = document.createElement('div');
+          modal.id = 'themeMapModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:860px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">主题地图</div>
+              <div class="modal-sub">根据当前稿件自动生成主题、关键词和 Bit 关系</div>
+              <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px;">
+                <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:14px;padding:16px;">
+                  <div style="font-size:12px;font-weight:900;color:var(--gold);margin-bottom:12px;">核心主题</div>
+                  <div style="display:flex;align-items:center;justify-content:center;height:180px;border-radius:50%;background:radial-gradient(circle, var(--purple-dim), transparent 68%);border:1px solid var(--border);">
+                    <div style="text-align:center;">
+                      <div style="font-size:26px;font-weight:900;color:var(--text-white);">北漂十年</div>
+                      <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">个人经历 · 城市身份 · 房租</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;">
+                    ${keywords.map((item, index) => `<button data-map-keyword="${escapeHtml(item.word)}" style="border:none;border-radius:20px;padding:5px 10px;background:${index % 2 ? 'var(--gold-dim)' : 'var(--purple-dim)'};color:${index % 2 ? 'var(--gold)' : 'var(--purple)'};font-size:${Math.min(18, 11 + item.count)}px;font-weight:800;">${escapeHtml(item.word)}</button>`).join('')}
+                  </div>
+                </div>
+                <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:14px;padding:16px;">
+                  <div style="font-size:12px;font-weight:900;color:var(--purple);margin-bottom:12px;">Bit 结构链路</div>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    ${bits.map((bit, index) => `
+                      <button data-jump-editor-bit="${index}" style="text-align:left;border:1px solid var(--border);background:var(--bg-card);border-radius:10px;padding:10px 12px;color:var(--text-soft);cursor:pointer;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                          <span style="font-size:10px;font-weight:900;color:var(--purple);">BIT ${String(index + 1).padStart(2, '0')}</span>
+                          <b style="font-size:12px;color:var(--text-white);">${escapeHtml(bit.type)}</b>
+                          <span style="margin-left:auto;font-size:10px;color:var(--text-faint);">${bit.text.length} 字</span>
+                        </div>
+                        <div style="font-size:11px;line-height:1.5;color:var(--text-muted);">${escapeHtml(bit.text.slice(0, 88))}${bit.text.length > 88 ? '…' : ''}</div>
+                      </button>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const bitJump = event.target.closest('[data-jump-editor-bit]');
+            if (bitJump) {
+              jumpToBit(Number(bitJump.dataset.jumpEditorBit));
+              modal.remove();
+            }
+            const keyword = event.target.closest('[data-map-keyword]')?.dataset.mapKeyword;
+            if (keyword) highlightKeyword(keyword);
+          });
+        }
+
+        function openAnalysisDashboard() {
+          removeModal('analysisDashboardModal');
+          const bits = getBits();
+          const scored = bits.map((bit, index) => ({
+            ...bit,
+            index,
+            score: estimateBitScore(bit.text),
+            pace: estimatePace(bit.text)
+          }));
+          const avg = scored.length ? (scored.reduce((sum, item) => sum + item.score, 0) / scored.length).toFixed(1) : '0';
+          const weakest = scored.reduce((a, b) => (b.score < a.score ? b : a), scored[0] || { index: 0, score: 0, text: '' });
+          const modal = document.createElement('div');
+          modal.id = 'analysisDashboardModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:900px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">笑点分析详情</div>
+              <div class="modal-sub">基于当前文本长度、反转词、Callback 和反馈的本地模拟分析</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                <div class="m-card"><div class="m-val" style="color:var(--gold);">${avg}</div><div class="m-label">平均笑点</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--purple);">${bits.length}</div><div class="m-label">段落数</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--orange);">${weakest.index + 1}</div><div class="m-label">最需优化</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--teal);">${scored.filter(item => item.score >= 8).length}</div><div class="m-label">强笑点</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${scored.map(item => `
+                  <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:11px 12px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                      <b style="color:var(--purple);font-size:12px;">第 ${item.index + 1} 段 · ${escapeHtml(item.type)}</b>
+                      <span style="margin-left:auto;color:${item.score >= 8 ? 'var(--teal)' : item.score >= 6 ? 'var(--gold)' : 'var(--orange)'};font-weight:900;">${item.score}/10</span>
+                    </div>
+                    <div style="height:5px;background:var(--bg-card);border-radius:3px;overflow:hidden;margin-bottom:8px;">
+                      <div style="height:100%;width:${item.score * 10}%;background:linear-gradient(to right,var(--purple),var(--pink),var(--gold));"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);line-height:1.5;">节奏：${item.pace} · ${analysisAdvice(item)}</div>
+                    <button class="ca-btn" data-improve-bit="${item.index}" style="margin-top:8px;"><i class="fa-solid fa-wand-sparkles"></i> 生成优化建议</button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const improve = event.target.closest('[data-improve-bit]');
+            if (improve) {
+              const bit = bits[Number(improve.dataset.improveBit)];
+              window.rpFill?.(`请优化第 ${Number(improve.dataset.improveBit) + 1} 段：${bit.text}`);
+              document.querySelectorAll('.rp-tab')[1]?.click();
+              jumpToBit(Number(improve.dataset.improveBit));
+              modal.remove();
+            }
+          });
+        }
+
+        function openTranscriptModal() {
+          removeModal('transcriptModal');
+          const modal = document.createElement('div');
+          modal.id = 'transcriptModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:760px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">录音稿导入</div>
+              <div class="modal-sub">MVP 暂以粘贴转写文本代替真实录音识别，可按空行拆成 Bit</div>
+              <textarea id="transcriptInput" rows="10" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;color:var(--text-white);padding:12px;outline:none;resize:vertical;line-height:1.7;" placeholder="粘贴演出转写稿。用空行分隔段落，每段会生成一个新的 Bit。"></textarea>
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button class="tb-btn btn-purple" data-import-transcript="1"><i class="fa-solid fa-file-import"></i> 拆分为 Bit</button>
+                <button class="tb-btn btn-border" data-fill-demo="1">填入示例转写</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-fill-demo]')) {
+              document.getElementById('transcriptInput').value = '我第一次来北京，觉得地铁特别像人生。你以为自己有方向，其实只是被人流推着走。\\n\\n后来我发现，北京最温柔的地方是导航。它从来不说你错了，它只说：正在为你重新规划路线。';
+            }
+            if (event.target.closest('[data-import-transcript]')) {
+              importTranscript();
+              modal.remove();
+            }
+          });
+        }
+
+        function openSettingsModal() {
+          removeModal('settingsModal');
+          const settings = readSettings();
+          const modal = document.createElement('div');
+          modal.id = 'settingsModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:560px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">项目设置</div>
+              <div class="modal-sub">配置本地 MVP 的写作偏好和 AI 模拟参数</div>
+              ${settingField('目标时长（分钟）', 'targetMinutes', settings.targetMinutes)}
+              ${settingField('喜剧风格', 'style', settings.style)}
+              ${settingField('AI 模型', 'model', settings.model)}
+              <label style="display:flex;align-items:center;gap:8px;margin:12px 0;color:var(--text-soft);font-size:12px;">
+                <input type="checkbox" id="settingAutosave" ${settings.autosave ? 'checked' : ''}> 启用自动保存
+              </label>
+              <button class="tb-btn btn-purple" data-save-settings="1" style="width:100%;justify-content:center;margin-top:8px;">保存设置</button>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-save-settings]')) {
+              const next = {
+                targetMinutes: document.getElementById('setting-targetMinutes').value,
+                style: document.getElementById('setting-style').value,
+                model: document.getElementById('setting-model').value,
+                autosave: document.getElementById('settingAutosave').checked
+              };
+              localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+              applySettings(next);
+              showToast('设置已保存');
+              modal.remove();
+            }
+          });
+        }
+
+        function settingField(label, key, value) {
+          return `
+            <label style="display:block;margin-bottom:10px;">
+              <span style="display:block;font-size:11px;font-weight:800;color:var(--text-faint);margin-bottom:5px;">${label}</span>
+              <input id="setting-${key}" value="${escapeHtml(value)}" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;color:var(--text-white);padding:9px 10px;outline:none;">
+            </label>`;
+        }
+
+        function importTranscript() {
+          const text = document.getElementById('transcriptInput')?.value.trim();
+          if (!text) return;
+          const parts = text.split(/\n\s*\n/).map(item => item.trim()).filter(Boolean);
+          parts.forEach((part, index) => {
+            window.addBit?.({
+              type: index === 0 ? 'SETUP' : 'OBSERVATIONAL',
+              html: escapeHtml(part),
+              duration: `~${Math.max(15, Math.round(part.length / 4))}秒`
+            });
+          });
+          showToast(`已导入 ${parts.length} 个 Bit`);
+        }
+
+        function readSettings() {
+          try {
+            return {
+              targetMinutes: '18',
+              style: '北漂共情 + 观察喜剧',
+              model: 'mock-riff-master',
+              autosave: true,
+              ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+            };
+          } catch {
+            return { targetMinutes: '18', style: '北漂共情 + 观察喜剧', model: 'mock-riff-master', autosave: true };
+          }
+        }
+
+        function applySettings(settings) {
+          document.querySelectorAll('.show-kicker span:last-child').forEach(el => {
+            el.textContent = `时长预计 ${settings.targetMinutes} 分钟`;
+          });
+          document.querySelectorAll('.statusbar .sb').forEach(el => {
+            if (el.textContent.includes('约')) {
+              el.innerHTML = `<i class="fa-regular fa-clock"></i> 约 <b>${escapeHtml(settings.targetMinutes)}</b> 分钟`;
+            }
+          });
+        }
+
+        function getBits() {
+          return Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+            block,
+            type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block.querySelector('.bit-text')?.innerText.trim() || ''
+          })).filter(bit => bit.text);
+        }
+
+        function keywordStats(text) {
+          const stop = new Set(['这个', '那个', '就是', '因为', '所以', '然后', '我们', '你们', '他们']);
+          const words = (text.match(/[\u4e00-\u9fa5]{2,6}/g) || []).filter(word => !stop.has(word));
+          const counts = words.reduce((map, word) => {
+            map[word] = (map[word] || 0) + 1;
+            return map;
+          }, {});
+          return Object.entries(counts).map(([word, count]) => ({ word, count })).sort((a, b) => b.count - a.count);
+        }
+
+        function estimateBitScore(text) {
+          let score = 5;
+          if (/但|结果|后来|真正|没想到|以为/.test(text)) score += 1.5;
+          if (/房租|游客|歪脖子树|导航|北京/.test(text)) score += 1;
+          if (text.length > 35 && text.length < 140) score += 1;
+          if (text.length > 180) score -= 1.5;
+          return Math.max(1, Math.min(10, Number(score.toFixed(1))));
+        }
+
+        function estimatePace(text) {
+          if (text.length < 25) return '偏短，适合做 Tagline';
+          if (text.length > 170) return '偏慢，需要压缩铺垫';
+          return '节奏适中';
+        }
+
+        function analysisAdvice(item) {
+          if (item.score >= 8) return '建议保留，并在演出时给足停顿。';
+          if (item.pace.includes('偏慢')) return '建议删除背景信息，提前进入反转词。';
+          return '可以增加一个更私人化的自嘲句。';
+        }
+
+        function highlightKeyword(keyword) {
+          document.querySelectorAll('.bit-content').forEach(el => el.classList.remove('active'));
+          const target = Array.from(document.querySelectorAll('.bit-block')).find(block => block.querySelector('.bit-text')?.innerText.includes(keyword));
+          if (target) {
+            target.querySelector('.bit-content')?.classList.add('active');
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }
+
+        function jumpToBit(index) {
+          const block = document.querySelectorAll('.bit-block')[index];
+          if (!block) return;
+          document.querySelectorAll('.bit-content').forEach(el => el.classList.remove('active'));
+          block.querySelector('.bit-content')?.classList.add('active');
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9800;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initNavigationModules);
+        } else {
+          initNavigationModules();
+        }
+      })();
+    </script>
   </body>
 </html>
