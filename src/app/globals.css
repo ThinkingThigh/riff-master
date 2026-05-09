@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-void: #0d0c0f;
+  --bg-deep: #121117;
+  --bg-card: #1a1920;
+  --bg-hover: #211f2a;
+  --bg-raised: #252330;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-bright: rgba(255, 255, 255, 0.13);
+  --text-white: #f2f0f8;
+  --text-soft: #b8b4cc;
+  --text-muted: #6e6a84;
+  --text-faint: #3a3750;
+  --gold: #f5c842;
+  --gold-dim: rgba(245, 200, 66, 0.18);
+  --gold-glow: rgba(245, 200, 66, 0.35);
+  --purple: #9b6dff;
+  --purple-dim: rgba(155, 109, 255, 0.15);
+  --purple-glow: rgba(155, 109, 255, 0.3);
+  --pink: #ff6b9d;
+  --pink-dim: rgba(255, 107, 157, 0.15);
+  --teal: #3ecfb0;
+  --teal-dim: rgba(62, 207, 176, 0.12);
+  --orange: #ff8c42;
+  --orange-dim: rgba(255, 140, 66, 0.12);
+  --red: #ff4d6d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg-void);
+  color: var(--text-white);
+  font-family: var(--font-sans), Tahoma, Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(155, 109, 255, 0.3);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-raised);
+  border-radius: 2px;
+}
+
+.stage-glow {
+  pointer-events: none;
+  position: fixed;
+  left: 50%;
+  top: 0;
+  z-index: 0;
+  height: 200px;
+  width: 600px;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at top, rgba(155, 109, 255, 0.06) 0%, transparent 70%);
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.topbar,
+.icon-rail,
+.library-panel,
+.editor-toolbar,
+.editor-input-wrap,
+.right-panel,
+.statusbar {
+  background: var(--bg-deep);
+  border-color: var(--border);
+}
+
+.glass-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.soft-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+
+.soft-card:hover {
+  border-color: var(--border-bright);
+}
+
+.tag-setup {
+  border: 1px solid rgba(62, 207, 176, 0.25);
+  background: rgba(62, 207, 176, 0.12);
+  color: var(--teal);
+}
+
+.tag-punchline {
+  border: 1px solid rgba(255, 140, 66, 0.25);
+  background: rgba(255, 140, 66, 0.12);
+  color: var(--orange);
+}
+
+.tag-tagline,
+.tag-self {
+  border: 1px solid rgba(155, 109, 255, 0.25);
+  background: rgba(155, 109, 255, 0.12);
+  color: var(--purple);
+}
+
+.tag-callback {
+  border: 1px solid rgba(245, 200, 66, 0.25);
+  background: rgba(245, 200, 66, 0.12);
+  color: var(--gold);
+}
+
+.tag-observational {
+  border: 1px solid rgba(255, 107, 157, 0.25);
+  background: rgba(255, 107, 157, 0.12);
+  color: var(--pink);
+}
+
+.kw,
+.ProseMirror .kw {
+  border-radius: 3px;
+  background: rgba(245, 200, 66, 0.18);
+  color: var(--gold);
+  font-weight: 700;
+  padding: 0 3px;
+}
+
+.kw-purple,
+.ProseMirror .kw-purple {
+  border-radius: 3px;
+  background: rgba(155, 109, 255, 0.18);
+  color: var(--purple);
+  font-weight: 700;
+  padding: 0 3px;
+}
+
+.kw-pink,
+.ProseMirror .kw-pink {
+  border-radius: 3px;
+  background: rgba(255, 107, 157, 0.18);
+  color: var(--pink);
+  font-weight: 700;
+  padding: 0 3px;
+}
+
+.ProseMirror {
+  min-height: 30px;
+  outline: none;
+  color: var(--text-soft);
+  font-size: 15.5px;
+  line-height: 1.85;
+  caret-color: var(--purple);
+}
+
+.ProseMirror strong {
+  color: var(--text-white);
+}
+
+.ProseMirror p {
+  margin: 0;
+}
+
+.fade-in {
+  animation: fadein 0.35s ease;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-red {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes dotbounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+@media (max-width: 960px) {
+  .right-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .library-panel {
+    display: none;
+  }
+  .topbar-title {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .icon-rail {
+    display: none;
+  }
+}

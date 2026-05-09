@@ -1,0 +1,3744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RiffMaster · 脱口秀创作系统</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdmirror.com/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
+    <link rel="stylesheet" href="https://static0.xesimg.com/alading-resources/css/css2.css?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" />
+    <style>
+      :root {
+        --bg-void: #0D0C0F;
+        --bg-deep: #121117;
+        --bg-card: #1A1920;
+        --bg-hover: #211F2A;
+        --bg-raised: #252330;
+        --border: rgba(255, 255, 255, 0.07);
+        --border-bright: rgba(255, 255, 255, 0.13);
+        --text-white: #F2F0F8;
+        --text-soft: #B8B4CC;
+        --text-muted: #6E6A84;
+        --text-faint: #3A3750;
+        --gold: #F5C842;
+        --gold-dim: rgba(245, 200, 66, 0.18);
+        --gold-glow: rgba(245, 200, 66, 0.35);
+        --purple: #9B6DFF;
+        --purple-dim: rgba(155, 109, 255, 0.15);
+        --purple-glow: rgba(155, 109, 255, 0.3);
+        --pink: #FF6B9D;
+        --pink-dim: rgba(255, 107, 157, 0.15);
+        --teal: #3ECFB0;
+        --teal-dim: rgba(62, 207, 176, 0.12);
+        --orange: #FF8C42;
+        --orange-dim: rgba(255, 140, 66, 0.12);
+        --red: #FF4D6D;
+        --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+        --shadow-glow: 0 0 40px rgba(155, 109, 255, 0.12);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Noto Sans SC", Tahoma, Arial, "Helvetica Neue", sans-serif;
+        background: var(--bg-void);
+        color: var(--text-white);
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ══════ 顶栏 ══════ */
+      .topbar {
+        height: 52px;
+        background: var(--bg-deep);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        gap: 0;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
+      }
+
+      .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .logo-icon {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, #9B6DFF 0%, #FF6B9D 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: white;
+        box-shadow: 0 3px 14px rgba(155, 109, 255, 0.5);
+        flex-shrink: 0;
+      }
+
+      .logo-name {
+        font-size: 17px;
+        font-weight: 800;
+        background: linear-gradient(to right, #F5C842, #FF8C42);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -0.3px;
+      }
+
+      .logo-sub {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 1px;
+        letter-spacing: 0.5px;
+      }
+
+      .tb-center {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+
+      .show-title-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-white);
+        text-align: center;
+        padding: 5px 14px;
+        border-radius: 8px;
+        transition: background 0.2s;
+        max-width: 320px;
+        width: 100%;
+      }
+
+      .show-title-input:hover {
+        background: var(--bg-card);
+      }
+
+      .show-title-input:focus {
+        background: var(--bg-card);
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-weight: 600;
+      }
+
+      .chip-live {
+        background: rgba(255, 77, 109, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(255, 77, 109, 0.3);
+      }
+
+      .chip-live::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        background: var(--red);
+        border-radius: 50%;
+        animation: pulse-red 1.5s ease infinite;
+      }
+
+      @keyframes pulse-red {
+
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        50% {
+          opacity: 0.5;
+          transform: scale(1.4);
+        }
+      }
+
+      .tb-right {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .tb-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 13px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-muted);
+      }
+
+      .btn-ghost:hover {
+        background: var(--bg-card);
+        color: var(--text-soft);
+      }
+
+      .btn-border {
+        background: transparent;
+        color: var(--text-soft);
+        border: 1px solid var(--border-bright);
+      }
+
+      .btn-border:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+        background: var(--purple-dim);
+      }
+
+      .btn-gold {
+        background: var(--gold);
+        color: #1A1400;
+        box-shadow: 0 3px 14px var(--gold-glow);
+      }
+
+      .btn-gold:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px var(--gold-glow);
+        filter: brightness(1.05);
+      }
+
+      .btn-purple {
+        background: var(--purple);
+        color: white;
+        box-shadow: 0 3px 14px var(--purple-glow);
+      }
+
+      .btn-purple:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px var(--purple-glow);
+      }
+
+      .v-sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border-bright);
+        margin: 0 4px;
+      }
+
+      .user-av {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: white;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+        flex-shrink: 0;
+      }
+
+      .user-av:hover {
+        border-color: var(--purple);
+      }
+
+      /* ══════ 主布局 ══════ */
+      .app-body {
+        flex: 1;
+        display: flex;
+        overflow: hidden;
+      }
+
+      /* ══════ 左侧图标栏 ══════ */
+      .icon-rail {
+        width: 54px;
+        background: var(--bg-deep);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px 0;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .rail-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-size: 14px;
+        border: none;
+        background: transparent;
+        transition: all 0.18s;
+        position: relative;
+      }
+
+      .rail-btn:hover {
+        background: var(--bg-card);
+        color: var(--text-soft);
+      }
+
+      .rail-btn.on {
+        background: var(--purple-dim);
+        color: var(--purple);
+      }
+
+      .rail-btn .badge-dot {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 6px;
+        height: 6px;
+        background: var(--gold);
+        border-radius: 50%;
+        border: 1.5px solid var(--bg-deep);
+      }
+
+      .rail-sep {
+        width: 24px;
+        height: 1px;
+        background: var(--border);
+        margin: 4px 0;
+      }
+
+      .rail-bottom {
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* ══════ 素材库面板 ══════ */
+      .library-panel {
+        width: 252px;
+        background: var(--bg-deep);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+
+      .lp-header {
+        padding: 14px 14px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .lp-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .lp-action {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .lp-action:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+
+      /* 搜索 */
+      .lp-search {
+        margin: 0 12px 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        gap: 7px;
+        transition: border-color 0.2s;
+      }
+
+      .lp-search:focus-within {
+        border-color: var(--purple);
+      }
+
+      .lp-search i {
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+
+      .lp-search input {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 12px;
+        color: var(--text-white);
+        flex: 1;
+        font-family: inherit;
+      }
+
+      .lp-search input::placeholder {
+        color: var(--text-muted);
+      }
+
+      /* 分组标签 */
+      .lp-tabs {
+        display: flex;
+        padding: 0 12px;
+        gap: 2px;
+        margin-bottom: 8px;
+      }
+
+      .lp-tab {
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all 0.15s;
+        border: none;
+        background: transparent;
+      }
+
+      .lp-tab:hover {
+        color: var(--text-soft);
+      }
+
+      .lp-tab.on {
+        background: var(--bg-card);
+        color: var(--text-white);
+      }
+
+      /* 素材列表 */
+      .lp-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 8px;
+      }
+
+      .lp-list::-webkit-scrollbar {
+        width: 3px;
+      }
+
+      .lp-list::-webkit-scrollbar-thumb {
+        background: var(--bg-raised);
+        border-radius: 2px;
+      }
+
+      .mat-group {
+        margin-bottom: 4px;
+      }
+
+      .mat-group-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        padding: 10px 8px 5px;
+      }
+
+      .mat-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 9px 10px;
+        border-radius: 9px;
+        cursor: pointer;
+        margin-bottom: 2px;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+      }
+
+      .mat-item:hover {
+        background: var(--bg-card);
+        border-color: var(--border);
+      }
+
+      .mat-item.on {
+        background: var(--purple-dim);
+        border-color: rgba(155, 109, 255, 0.3);
+      }
+
+      .mat-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .mat-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .mat-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-soft);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .mat-item.on .mat-name {
+        color: var(--text-white);
+      }
+
+      .mat-meta {
+        font-size: 10.5px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .mat-badge {
+        font-size: 9.5px;
+        padding: 1.5px 5px;
+        border-radius: 4px;
+        font-weight: 700;
+      }
+
+      .lp-footer {
+        padding: 10px 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      .new-material-btn {
+        width: 100%;
+        padding: 9px;
+        background: transparent;
+        border: 1.5px dashed var(--text-faint);
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .new-material-btn:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: var(--gold-dim);
+      }
+
+      /* ══════ 编辑器主区 ══════ */
+      .editor-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-void);
+        overflow: hidden;
+      }
+
+      /* 工具栏 */
+      .editor-toolbar {
+        height: 44px;
+        background: var(--bg-deep);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 2px;
+        flex-shrink: 0;
+      }
+
+      .tool-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .tool-btn:hover {
+        background: var(--bg-card);
+        color: var(--text-soft);
+      }
+
+      .tool-btn.on {
+        background: var(--purple-dim);
+        color: var(--purple);
+      }
+
+      .tool-sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+        margin: 0 6px;
+      }
+
+      .tool-select {
+        height: 26px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0 7px;
+        color: var(--text-soft);
+        font-size: 11.5px;
+        outline: none;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .toolbar-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .laugh-meter {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+      }
+
+      .laugh-meter i {
+        font-size: 12px;
+        color: var(--gold);
+      }
+
+      .laugh-label {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .laugh-val {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gold);
+      }
+
+      /* 编辑器内容区 */
+      .editor-scroll {
+        flex: 1;
+        overflow-y: auto;
+        position: relative;
+      }
+
+      .editor-scroll::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      .editor-scroll::-webkit-scrollbar-thumb {
+        background: var(--bg-raised);
+        border-radius: 3px;
+      }
+
+      .editor-canvas {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 40px 60px 100px;
+        min-height: 100%;
+      }
+
+      /* 主题标签 */
+      .show-kicker {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .kicker-pill {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: var(--gold-dim);
+        color: var(--gold);
+        border: 1px solid rgba(245, 200, 66, 0.3);
+      }
+
+      .kicker-sep {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* 段落：Setup + Punchline */
+      .bit-block {
+        margin-bottom: 32px;
+        position: relative;
+      }
+
+      .bit-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .bit-type-tag {
+        font-size: 9.5px;
+        font-weight: 800;
+        letter-spacing: 0.9px;
+        text-transform: uppercase;
+        padding: 3px 8px;
+        border-radius: 5px;
+      }
+
+      .tag-setup {
+        background: rgba(62, 207, 176, 0.12);
+        color: var(--teal);
+        border: 1px solid rgba(62, 207, 176, 0.25);
+      }
+
+      .tag-punchline {
+        background: rgba(255, 140, 66, 0.12);
+        color: var(--orange);
+        border: 1px solid rgba(255, 140, 66, 0.25);
+      }
+
+      .tag-tagline {
+        background: rgba(155, 109, 255, 0.12);
+        color: var(--purple);
+        border: 1px solid rgba(155, 109, 255, 0.25);
+      }
+
+      .tag-callback {
+        background: rgba(245, 200, 66, 0.12);
+        color: var(--gold);
+        border: 1px solid rgba(245, 200, 66, 0.25);
+      }
+
+      .tag-observational {
+        background: rgba(255, 107, 157, 0.12);
+        color: var(--pink);
+        border: 1px solid rgba(255, 107, 157, 0.25);
+      }
+
+      .bit-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+
+      .bit-block:hover .bit-actions {
+        opacity: 1;
+      }
+
+      .bit-act-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .bit-act-btn:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+        background: var(--purple-dim);
+      }
+
+      .bit-act-btn.danger:hover {
+        border-color: var(--red);
+        color: var(--red);
+      }
+
+      /* 评分条 */
+      .bit-score-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .score-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        width: 50px;
+        flex-shrink: 0;
+      }
+
+      .score-track {
+        flex: 1;
+        height: 4px;
+        background: var(--bg-card);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .score-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 1s ease;
+      }
+
+      .score-val {
+        font-size: 10px;
+        color: var(--text-soft);
+        font-weight: 700;
+        width: 28px;
+        text-align: right;
+        flex-shrink: 0;
+      }
+
+      /* 内容块 */
+      .bit-content {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        position: relative;
+        transition: border-color 0.2s;
+      }
+
+      .bit-content:hover {
+        border-color: var(--border-bright);
+      }
+
+      .bit-content.active {
+        border-color: var(--purple);
+        box-shadow: 0 0 0 3px var(--purple-dim);
+      }
+
+      .bit-num {
+        position: absolute;
+        top: 16px;
+        left: -38px;
+        width: 26px;
+        height: 26px;
+        border-radius: 8px;
+        background: var(--bg-raised);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      .bit-text {
+        font-size: 15.5px;
+        line-height: 1.85;
+        color: var(--text-soft);
+        outline: none;
+        caret-color: var(--purple);
+        min-height: 30px;
+      }
+
+      .bit-text b,
+      .bit-text strong {
+        color: var(--text-white);
+        font-weight: 700;
+      }
+
+      .bit-text[contenteditable="true"]:empty::before {
+        content: attr(data-ph);
+        color: var(--text-faint);
+      }
+
+      /* 高亮词 */
+      .kw {
+        background: rgba(245, 200, 66, 0.18);
+        color: var(--gold);
+        border-radius: 3px;
+        padding: 0 3px;
+        font-weight: 700;
+      }
+
+      .kw-purple {
+        background: rgba(155, 109, 255, 0.18);
+        color: var(--purple);
+        border-radius: 3px;
+        padding: 0 3px;
+        font-weight: 700;
+      }
+
+      .kw-pink {
+        background: rgba(255, 107, 157, 0.18);
+        color: var(--pink);
+        border-radius: 3px;
+        padding: 0 3px;
+        font-weight: 700;
+      }
+
+      /* 笑声反应 */
+      .bit-reactions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      .reaction-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 9px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: transparent;
+        cursor: pointer;
+        font-size: 11px;
+        color: var(--text-muted);
+        transition: all 0.15s;
+        font-family: inherit;
+      }
+
+      .reaction-btn:hover {
+        border-color: var(--border-bright);
+        color: var(--text-soft);
+      }
+
+      .reaction-btn.on {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: var(--gold-dim);
+      }
+
+      .reaction-sep {
+        flex: 1;
+      }
+
+      .time-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10.5px;
+        color: var(--text-faint);
+      }
+
+      /* AI 建议块 */
+      .ai-suggest {
+        margin: 16px 0;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, rgba(155, 109, 255, 0.08) 0%, rgba(255, 107, 157, 0.06) 100%);
+        border: 1px solid rgba(155, 109, 255, 0.2);
+        border-radius: 10px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .ai-suggest:hover {
+        border-color: rgba(155, 109, 255, 0.45);
+        transform: translateX(4px);
+      }
+
+      .ai-suggest-icon {
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .ai-suggest-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--purple);
+        margin-bottom: 3px;
+      }
+
+      .ai-suggest-text {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.55;
+      }
+
+      /* 添加段落 */
+      .add-bit-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 24px 0;
+      }
+
+      .add-bit-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      .add-bit-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1.5px dashed var(--text-faint);
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+
+      .add-bit-btn:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+        background: var(--purple-dim);
+      }
+
+      /* 输入区 */
+      .editor-input-wrap {
+        border-top: 1px solid var(--border);
+        padding: 12px 20px 14px;
+        background: var(--bg-deep);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+      }
+
+      .main-input-box {
+        flex: 1;
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+
+      .main-input-box:focus-within {
+        border-color: var(--purple);
+        box-shadow: 0 0 0 3px var(--purple-dim);
+      }
+
+      .main-textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 10px 14px 6px;
+        font-size: 13.5px;
+        color: var(--text-white);
+        font-family: inherit;
+        resize: none;
+        line-height: 1.55;
+      }
+
+      .main-textarea::placeholder {
+        color: var(--text-faint);
+      }
+
+      .input-bottom {
+        display: flex;
+        align-items: center;
+        padding: 5px 10px;
+        gap: 6px;
+      }
+
+      .input-tag-picker {
+        display: flex;
+        gap: 4px;
+      }
+
+      .iti-btn {
+        font-size: 9.5px;
+        font-weight: 700;
+        padding: 3px 7px;
+        border-radius: 5px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+      }
+
+      .inp-sep {
+        flex: 1;
+      }
+
+      .send-btn {
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        box-shadow: 0 3px 12px rgba(155, 109, 255, 0.4);
+        flex-shrink: 0;
+      }
+
+      .send-btn:hover {
+        transform: scale(1.07);
+        box-shadow: 0 5px 18px rgba(155, 109, 255, 0.55);
+      }
+
+      /* 快捷词 */
+      .quick-words {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+
+      .qw {
+        font-size: 10.5px;
+        padding: 3px 9px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .qw:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+        background: var(--gold-dim);
+      }
+
+      /* ══════ 右侧面板 ══════ */
+      .right-panel {
+        width: 300px;
+        background: var(--bg-deep);
+        border-left: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+
+      /* AI助手头 */
+      .rp-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .ai-ava {
+        width: 38px;
+        height: 38px;
+        background: linear-gradient(135deg, #9B6DFF, #FF6B9D);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: white;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .ai-pulse {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        background: var(--teal);
+        border-radius: 50%;
+        border: 2px solid var(--bg-deep);
+        animation: teal-pulse 2.5s ease infinite;
+      }
+
+      @keyframes teal-pulse {
+
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(62, 207, 176, 0.5);
+        }
+
+        50% {
+          box-shadow: 0 0 0 5px rgba(62, 207, 176, 0);
+        }
+      }
+
+      .rp-head-info {
+        flex: 1;
+      }
+
+      .rp-title {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--text-white);
+      }
+
+      .rp-sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 1px;
+      }
+
+      /* 面板 Tab */
+      .rp-tabs {
+        display: flex;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .rp-tab {
+        padding: 9px 10px;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+
+      .rp-tab:hover {
+        color: var(--text-soft);
+      }
+
+      .rp-tab.on {
+        color: var(--purple);
+        border-bottom-color: var(--purple);
+      }
+
+      .rp-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+      }
+
+      .rp-body::-webkit-scrollbar {
+        width: 3px;
+      }
+
+      .rp-body::-webkit-scrollbar-thumb {
+        background: var(--bg-raised);
+        border-radius: 2px;
+      }
+
+      .sec-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 10px;
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .sec-title:first-child {
+        margin-top: 0;
+      }
+
+      .sec-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* 笑点密度图 */
+      .density-chart {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 10px;
+      }
+
+      .dc-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .dc-label span {
+        color: var(--gold);
+        font-weight: 700;
+      }
+
+      .density-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        height: 50px;
+      }
+
+      .db-bar {
+        flex: 1;
+        border-radius: 3px 3px 0 0;
+        min-height: 4px;
+        transition: height 1s ease;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .db-bar:hover::after {
+        content: attr(data-val);
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        color: var(--text-soft);
+        background: var(--bg-raised);
+        padding: 2px 5px;
+        border-radius: 3px;
+        white-space: nowrap;
+      }
+
+      .density-labels {
+        display: flex;
+        gap: 4px;
+        margin-top: 5px;
+      }
+
+      .dl-item {
+        flex: 1;
+        text-align: center;
+        font-size: 9px;
+        color: var(--text-faint);
+      }
+
+      /* 表情趋势 */
+      .mood-timeline {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 10px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .mood-seg {
+        flex: 1;
+        padding: 10px 6px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        border-right: 1px solid var(--border);
+      }
+
+      .mood-seg:last-child {
+        border-right: none;
+      }
+
+      .mood-seg:hover {
+        background: var(--bg-raised);
+      }
+
+      .mood-emoji {
+        font-size: 20px;
+        display: block;
+      }
+
+      .mood-time {
+        font-size: 9px;
+        color: var(--text-faint);
+        margin-top: 3px;
+      }
+
+      .mood-val {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--gold);
+      }
+
+      /* 指标卡 */
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .m-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 10px 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .m-card:hover {
+        border-color: var(--border-bright);
+      }
+
+      .m-val {
+        font-size: 19px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 3px;
+      }
+
+      .m-label {
+        font-size: 9.5px;
+        color: var(--text-muted);
+      }
+
+      /* AI建议列表 */
+      .ai-tip-list {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .ai-tip {
+        display: flex;
+        gap: 9px;
+        padding: 10px 11px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .ai-tip:hover {
+        border-color: rgba(155, 109, 255, 0.35);
+        background: var(--purple-dim);
+      }
+
+      .ai-tip-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .ai-tip-body {
+        flex: 1;
+      }
+
+      .ai-tip-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-white);
+        margin-bottom: 2px;
+      }
+
+      .ai-tip-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+
+      .ai-tip-badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        align-self: flex-start;
+      }
+
+      /* 词云 */
+      .word-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+
+      .cloud-word {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s;
+      }
+
+      .cloud-word:hover {
+        transform: scale(1.08);
+      }
+
+      /* 对话 */
+      .chat-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .chat-row {
+        display: flex;
+        gap: 7px;
+        align-items: flex-start;
+      }
+
+      .chat-row.me {
+        flex-direction: row-reverse;
+      }
+
+      .chat-ava {
+        width: 24px;
+        height: 24px;
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .chat-ava.ai-av {
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        color: white;
+      }
+
+      .chat-ava.me-av {
+        background: var(--gold);
+        color: #1A1400;
+      }
+
+      .chat-bub {
+        max-width: 210px;
+        padding: 9px 11px;
+        font-size: 12px;
+        line-height: 1.55;
+        border-radius: 11px;
+      }
+
+      .chat-bub.ai {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        color: var(--text-soft);
+        border-radius: 4px 11px 11px 11px;
+      }
+
+      .chat-bub.me {
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        color: white;
+        border-radius: 11px 4px 11px 11px;
+      }
+
+      .chat-acts {
+        display: flex;
+        gap: 5px;
+        margin-top: 6px;
+      }
+
+      .ca-btn {
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 5px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .ca-btn:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+
+      .ca-btn.ok {
+        background: rgba(62, 207, 176, 0.1);
+        border-color: rgba(62, 207, 176, 0.3);
+        color: var(--teal);
+      }
+
+      .typing-row {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+
+      .dots-row {
+        display: flex;
+        gap: 3px;
+        padding: 9px 13px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 4px 11px 11px 11px;
+      }
+
+      .dot {
+        width: 5px;
+        height: 5px;
+        background: var(--text-muted);
+        border-radius: 50%;
+        animation: dotbounce 1.3s ease infinite;
+      }
+
+      .dot:nth-child(2) {
+        animation-delay: .18s;
+      }
+
+      .dot:nth-child(3) {
+        animation-delay: .36s;
+      }
+
+      @keyframes dotbounce {
+
+        0%,
+        60%,
+        100% {
+          transform: translateY(0);
+          opacity: .4
+        }
+
+        30% {
+          transform: translateY(-5px);
+          opacity: 1
+        }
+      }
+
+      /* 底部输入 */
+      .rp-footer {
+        padding: 10px 12px 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      .rp-input-wrap {
+        background: var(--bg-card);
+        border: 1.5px solid var(--border);
+        border-radius: 11px;
+        overflow: hidden;
+        transition: all 0.2s;
+      }
+
+      .rp-input-wrap:focus-within {
+        border-color: var(--purple);
+        box-shadow: 0 0 0 3px var(--purple-dim);
+      }
+
+      .rp-textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        outline: none;
+        padding: 9px 12px 4px;
+        font-size: 12.5px;
+        color: var(--text-white);
+        font-family: inherit;
+        resize: none;
+        line-height: 1.5;
+      }
+
+      .rp-textarea::placeholder {
+        color: var(--text-faint);
+      }
+
+      .rp-inp-footer {
+        display: flex;
+        align-items: center;
+        padding: 4px 9px;
+        gap: 5px;
+      }
+
+      .rp-inp-hint {
+        font-size: 10px;
+        color: var(--text-faint);
+        flex: 1;
+      }
+
+      .mini-send {
+        width: 26px;
+        height: 26px;
+        background: linear-gradient(135deg, var(--purple), var(--pink));
+        border: none;
+        border-radius: 7px;
+        color: white;
+        font-size: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .mini-send:hover {
+        transform: scale(1.07);
+      }
+
+      .quick-chips-rp {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 7px;
+      }
+
+      .rp-chip {
+        font-size: 10px;
+        padding: 3px 8px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .rp-chip:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+
+      /* 状态栏 */
+      .statusbar {
+        height: 25px;
+        background: var(--bg-deep);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        flex-shrink: 0;
+      }
+
+      .sb {
+        font-size: 10.5px;
+        color: var(--text-faint);
+        padding: 0 10px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .sb:first-child {
+        padding-left: 0;
+      }
+
+      .sb-r {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+
+      .sb b {
+        color: var(--text-muted);
+      }
+
+      .sb i {
+        font-size: 9px;
+      }
+
+      /* 模态 */
+      .modal-bg {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal-bg.open {
+        display: flex;
+      }
+
+      .modal-box {
+        background: var(--bg-card);
+        border: 1px solid var(--border-bright);
+        border-radius: 20px;
+        width: 92%;
+        max-width: 500px;
+        padding: 28px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+      }
+
+      @keyframes pop {
+        from {
+          opacity: 0;
+          transform: scale(0.9) translateY(10px)
+        }
+
+        to {
+          opacity: 1;
+          transform: scale(1) translateY(0)
+        }
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--bg-raised);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 11px;
+        transition: all 0.15s;
+      }
+
+      .modal-close:hover {
+        background: var(--bg-void);
+        color: var(--text-white);
+      }
+
+      .modal-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-white);
+        margin-bottom: 5px;
+        font-family: "Noto Serif SC", serif;
+      }
+
+      .modal-sub {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 22px;
+      }
+
+      /* 选中浮动条 */
+      .float-bar {
+        position: fixed;
+        background: var(--bg-card);
+        border: 1px solid var(--border-bright);
+        border-radius: 10px;
+        padding: 5px;
+        display: none;
+        gap: 2px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55);
+        z-index: 800;
+      }
+
+      .float-bar.show {
+        display: flex;
+      }
+
+      .fb-btn {
+        padding: 5px 9px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        font-size: 11px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+
+      .fb-btn:hover {
+        background: var(--bg-raised);
+      }
+
+      .fb-btn.magic {
+        color: var(--purple);
+      }
+
+      .fb-btn.gold {
+        color: var(--gold);
+      }
+
+      .fb-btn.plain {
+        color: var(--text-muted);
+      }
+
+      .fb-sep {
+        width: 1px;
+        height: 16px;
+        background: var(--border);
+        margin: 0 2px;
+      }
+
+      /* 响应式 */
+      @media(max-width:1100px) {
+        .right-panel {
+          width: 270px;
+        }
+      }
+
+      @media(max-width:960px) {
+        .right-panel {
+          display: none;
+        }
+      }
+
+      @media(max-width:720px) {
+        .library-panel {
+          display: none;
+        }
+
+        .editor-canvas {
+          padding: 30px 28px 80px;
+        }
+
+        .tb-center {
+          display: none;
+        }
+      }
+
+      @media(max-width:520px) {
+        .icon-rail {
+          display: none;
+        }
+      }
+
+      /* 动效 */
+      .fade-in {
+        animation: fadein 0.4s ease;
+      }
+
+      @keyframes fadein {
+        from {
+          opacity: 0;
+          transform: translateY(10px)
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0)
+        }
+      }
+
+      ::selection {
+        background: rgba(155, 109, 255, 0.3);
+        color: white;
+      }
+
+      ::-webkit-scrollbar {
+        width: 4px;
+        height: 4px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--bg-raised);
+        border-radius: 2px;
+      }
+
+      /* 舞台灯效 */
+      .stage-glow {
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 200px;
+        background: radial-gradient(ellipse at top, rgba(155, 109, 255, 0.06) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* 舞台进度条 */
+      .show-progress {
+        height: 3px;
+        background: var(--bg-card);
+        border-radius: 2px;
+        overflow: hidden;
+        margin: 0 12px 12px;
+      }
+
+      .sp-fill {
+        height: 100%;
+        background: linear-gradient(to right, var(--purple), var(--pink), var(--gold));
+        border-radius: 2px;
+        transition: width 1s ease;
+      }
+
+      /* Canvas */
+      .chart-wrap {
+        height: 80px;
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="stage-glow"></div>
+
+    <!-- ════════════ TOPBAR ════════════ -->
+    <header class="topbar">
+      <div class="logo-area">
+        <div class="logo-icon"><i class="fa-solid fa-microphone-lines"></i></div>
+        <div>
+          <div class="logo-name">RiffMaster</div>
+          <div class="logo-sub">脱口秀创作系统</div>
+        </div>
+      </div>
+
+      <div class="v-sep" style="margin:0 16px;"></div>
+
+      <div class="tb-center">
+        <input class="show-title-input" value="北漂十年：你好，北京，我要走了" type="text" />
+        <span class="status-chip chip-live">草稿进行中</span>
+      </div>
+
+      <div class="tb-right">
+        <button class="tb-btn btn-ghost">
+          <i class="fa-solid fa-users"></i> 协作
+        </button>
+        <button class="tb-btn btn-border" onclick="openPerform()">
+          <i class="fa-solid fa-film"></i> 排练模式
+        </button>
+        <button class="tb-btn btn-gold">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> AI 笑点优化
+        </button>
+        <div class="v-sep"></div>
+        <button class="tb-btn btn-ghost" style="padding:6px 8px;">
+          <i class="fa-regular fa-bell" style="font-size:14px;"></i>
+        </button>
+        <div class="user-av">李</div>
+      </div>
+    </header>
+
+    <!-- ════════════ BODY ════════════ -->
+    <div class="app-body">
+
+      <!-- ── 图标栏 ── -->
+      <nav class="icon-rail">
+        <button class="rail-btn on" title="编辑器"><i class="fa-solid fa-pen-nib"></i></button>
+        <button class="rail-btn" title="素材库" style="position:relative;">
+          <i class="fa-solid fa-box-open"></i>
+          <span class="badge-dot"></span>
+        </button>
+        <button class="rail-btn" title="主题地图"><i class="fa-solid fa-sitemap"></i></button>
+        <div class="rail-sep"></div>
+        <button class="rail-btn" title="笑点分析"><i class="fa-solid fa-chart-line"></i></button>
+        <button class="rail-btn" title="历史版本"><i class="fa-solid fa-clock-rotate-left"></i></button>
+        <button class="rail-btn" title="录音稿"><i class="fa-solid fa-record-vinyl"></i></button>
+        <div class="rail-bottom">
+          <div class="rail-sep"></div>
+          <button class="rail-btn" title="设置"><i class="fa-solid fa-gear"></i></button>
+        </div>
+      </nav>
+
+      <!-- ── 素材库 ── -->
+      <aside class="library-panel">
+        <div class="lp-header">
+          <span class="lp-title">素材库</span>
+          <button class="lp-action"><i class="fa-solid fa-plus"></i></button>
+        </div>
+
+        <div class="lp-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="搜索素材、段子…" />
+        </div>
+
+        <div class="lp-tabs">
+          <button class="lp-tab on">全部</button>
+          <button class="lp-tab">段子</button>
+          <button class="lp-tab">金句</button>
+          <button class="lp-tab">话题</button>
+        </div>
+
+        <!-- 进度 -->
+        <div class="show-progress">
+          <div class="sp-fill" style="width:58%;"></div>
+        </div>
+
+        <div class="lp-list">
+          <div class="mat-group">
+            <div class="mat-group-label">当前节目</div>
+
+            <div class="mat-item on">
+              <div class="mat-icon" style="background:rgba(155,109,255,0.15);">
+                <i class="fa-solid fa-microphone" style="color:var(--purple);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">北漂十年感悟</div>
+                <div class="mat-meta">
+                  <span>12段</span>
+                  <span>·</span>
+                  <span style="color:var(--gold);">★ 热门</span>
+                </div>
+              </div>
+              <span class="mat-badge" style="background:rgba(155,109,255,0.15);color:var(--purple);">主稿</span>
+            </div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(245,200,66,0.1);">
+                <i class="fa-solid fa-lightbulb" style="color:var(--gold);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">租房奇葩经历</div>
+                <div class="mat-meta"><span>5段</span><span>·</span><span>备用素材</span></div>
+              </div>
+            </div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(62,207,176,0.1);">
+                <i class="fa-solid fa-train-subway" style="color:var(--teal);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">地铁上的人类</div>
+                <div class="mat-meta"><span>8段</span><span>·</span><span>观察喜剧</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mat-group">
+            <div class="mat-group-label">话题池</div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(255,107,157,0.1);">
+                <i class="fa-solid fa-heart-pulse" style="color:var(--pink);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">相亲那些事</div>
+                <div class="mat-meta"><span>3段</span><span>·</span><span>关系类</span></div>
+              </div>
+              <span class="mat-badge" style="background:rgba(255,107,157,0.12);color:var(--pink);">新</span>
+            </div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(255,140,66,0.1);">
+                <i class="fa-solid fa-briefcase" style="color:var(--orange);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">职场黑话大赏</div>
+                <div class="mat-meta"><span>11段</span><span>·</span><span>职场类</span></div>
+              </div>
+            </div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(62,207,176,0.1);">
+                <i class="fa-solid fa-mobile-screen" style="color:var(--teal);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">互联网黑话</div>
+                <div class="mat-meta"><span>7段</span><span>·</span><span>科技类</span></div>
+              </div>
+            </div>
+
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(245,200,66,0.1);">
+                <i class="fa-solid fa-bowl-food" style="color:var(--gold);"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">外卖人生哲学</div>
+                <div class="mat-meta"><span>4段</span><span>·</span><span>生活观察</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mat-group">
+            <div class="mat-group-label">灵感记录</div>
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(255,77,109,0.1);">
+                <i class="fa-solid fa-bolt" style="color:var(--red);font-size:11px;"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">地铁广告词槽点</div>
+                <div class="mat-meta"><span>随手记</span><span>·</span><span>2分钟前</span></div>
+              </div>
+            </div>
+            <div class="mat-item">
+              <div class="mat-icon" style="background:rgba(155,109,255,0.1);">
+                <i class="fa-solid fa-bolt" style="color:var(--purple);font-size:11px;"></i>
+              </div>
+              <div class="mat-body">
+                <div class="mat-name">老板当众表扬</div>
+                <div class="mat-meta"><span>随手记</span><span>·</span><span>昨天</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="lp-footer">
+          <button class="new-material-btn">
+            <i class="fa-solid fa-plus"></i>
+            记录新灵感
+          </button>
+        </div>
+      </aside>
+
+      <!-- ════════════ 编辑器 ════════════ -->
+      <main class="editor-main">
+        <!-- 工具栏 -->
+        <div class="editor-toolbar">
+          <select class="tool-select" style="width:90px;">
+            <option>Setup</option>
+            <option>Punchline</option>
+            <option>Tagline</option>
+            <option>Callback</option>
+            <option>观察类</option>
+            <option>自嘲</option>
+          </select>
+          &nbsp;
+          <button class="tool-btn on" title="加粗"><i class="fa-solid fa-bold"></i></button>
+          <button class="tool-btn" title="斜体"><i class="fa-solid fa-italic"></i></button>
+          <button class="tool-btn" title="高亮笑点"><i class="fa-solid fa-highlighter"></i></button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" title="插入停顿标记"><i class="fa-solid fa-pause"></i></button>
+          <button class="tool-btn" title="插入强调"><i class="fa-solid fa-exclamation"></i></button>
+          <button class="tool-btn" title="添加注释"><i class="fa-regular fa-comment-dots"></i></button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" title="舞台方向"><i class="fa-solid fa-person-walking-arrow-right"></i></button>
+          <button class="tool-btn" title="插入音效标记"><i class="fa-solid fa-music"></i></button>
+          <button class="tool-btn" title="克隆段落"><i class="fa-solid fa-clone"></i></button>
+          <div class="tool-sep"></div>
+          <button class="tool-btn" title="撤销"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="tool-btn" title="重做"><i class="fa-solid fa-rotate-right"></i></button>
+
+          <div class="toolbar-right">
+            <div class="laugh-meter">
+              <i class="fa-solid fa-face-laugh-squint"></i>
+              <span class="laugh-label">笑点密度</span>
+              <span class="laugh-val">8.4</span>
+              <span style="font-size:10px;color:var(--text-muted);">/10</span>
+            </div>
+            <div class="tool-sep"></div>
+            <button class="tool-btn" title="专注模式"><i class="fa-solid fa-expand"></i></button>
+            <button class="tool-btn" title="预览稿件"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <!-- 内容区 -->
+        <div class="editor-scroll" id="editorScroll">
+          <div class="editor-canvas fade-in">
+
+            <!-- 节目头 -->
+            <div class="show-kicker">
+              <span class="kicker-pill"><i class="fa-solid fa-microphone-lines" style="margin-right:5px;"></i>STAND-UP · 个人经历</span>
+              <span class="kicker-sep"></span>
+              <span style="font-size:11px;color:var(--text-faint);">时长预计 18 分钟</span>
+            </div>
+
+            <!-- ── Bit 1 ── -->
+            <div class="bit-block">
+              <div class="bit-header">
+                <span class="bit-type-tag tag-setup">SETUP</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;">开场铺垫</span>
+                <div class="bit-actions">
+                  <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
+                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
+                  <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </div>
+              <div class="bit-score-bar">
+                <span class="score-label">预期笑声</span>
+                <div class="score-track">
+                  <div class="score-fill" id="s1" style="width:0;background:linear-gradient(to right,#3ECFB0,#9B6DFF);"></div>
+                </div>
+                <span class="score-val">62%</span>
+              </div>
+              <div class="bit-content active" style="padding-left:54px;">
+                <div class="bit-num">01</div>
+                <div class="bit-text" contenteditable="true" spellcheck="false">
+                  我在北京待了<span class="kw">整整十年</span>。你们知道北京十年意味着什么吗？意味着我<span class="kw-purple">掌握了一项核心技能</span>——我能精准判断，一条路，我走还是不走——<strong>全看导航上那个小红点是静止的，还是在轻微地颤抖。</strong>
+                </div>
+                <div class="bit-reactions">
+                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">12</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">5</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">1</b></button>
+                  <span class="reaction-sep"></span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~45秒</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Bit 2 ── -->
+            <div class="bit-block">
+              <div class="bit-header">
+                <span class="bit-type-tag tag-punchline">PUNCHLINE</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;">核心笑点</span>
+                <div class="bit-actions">
+                  <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
+                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
+                  <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </div>
+              <div class="bit-score-bar">
+                <span class="score-label">预期笑声</span>
+                <div class="score-track">
+                  <div class="score-fill" id="s2" style="width:0;background:linear-gradient(to right,#FF8C42,#FF6B9D);"></div>
+                </div>
+                <span class="score-val">91%</span>
+              </div>
+              <div class="bit-content" style="padding-left:54px;">
+                <div class="bit-num">02</div>
+                <div class="bit-text" contenteditable="true" spellcheck="false">
+                  但我最近决定离开北京。我妈听说之后，<span class="kw-pink">震惊</span>地问我：儿子，你是不是被北京的什么人欺负了？我说，妈，没有，北京对我挺好的——它只是<span class="kw">收了我十年房租</span>，然后很客气地告诉我，<strong>我永远是这座城市的游客。</strong>
+                </div>
+                <div class="bit-reactions">
+                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">28</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">3</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
+                  <span class="reaction-sep"></span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~50秒</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI 建议 -->
+            <div class="ai-suggest" onclick="doSuggest()">
+              <div class="ai-suggest-icon"><i class="fa-solid fa-robot"></i></div>
+              <div>
+                <div class="ai-suggest-label">✨ AI 建议：插入 Callback</div>
+                <div class="ai-suggest-text">检测到「游客」这个词非常适合在结尾做 Callback 回扣，点击让 AI 生成回扣段落，可以大幅提升节目的整体感。</div>
+              </div>
+              <button style="border:1px solid rgba(155,109,255,0.3);background:rgba(155,109,255,0.1);border-radius:7px;padding:6px 12px;color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px;font-family:inherit;" onclick="event.stopPropagation();doSuggest()">
+                生成
+              </button>
+            </div>
+
+            <!-- ── Bit 3 ── -->
+            <div class="bit-block">
+              <div class="bit-header">
+                <span class="bit-type-tag tag-observational">观察类</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;">生活素材</span>
+                <div class="bit-actions">
+                  <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
+                  <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </div>
+              <div class="bit-score-bar">
+                <span class="score-label">预期笑声</span>
+                <div class="score-track">
+                  <div class="score-fill" id="s3" style="width:0;background:linear-gradient(to right,#F5C842,#FF8C42);"></div>
+                </div>
+                <span class="score-val">76%</span>
+              </div>
+              <div class="bit-content" style="padding-left:54px;">
+                <div class="bit-num">03</div>
+                <div class="bit-text" contenteditable="true" spellcheck="false">
+                  北京人对方向感的执着，是外地人永远理解不了的。我在北京第一年，跟一个老北京问路，他跟我说：<span class="kw">出门往东，再往南，看见那棵歪脖子树，那儿以前有个邮局</span>——我跟他说，大哥，现在是2015年，邮局已经是一个抽象概念了。
+                </div>
+                <div class="bit-reactions">
+                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">19</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">8</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">2</b></button>
+                  <span class="reaction-sep"></span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~55秒</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Bit 4 ── -->
+            <div class="bit-block">
+              <div class="bit-header">
+                <span class="bit-type-tag tag-tagline">TAGLINE</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;">补充笑点</span>
+                <div class="bit-actions">
+                  <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
+                  <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </div>
+              <div class="bit-score-bar">
+                <span class="score-label">预期笑声</span>
+                <div class="score-track">
+                  <div class="score-fill" id="s4" style="width:0;background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div>
+                </div>
+                <span class="score-val">84%</span>
+              </div>
+              <div class="bit-content" style="padding-left:54px;">
+                <div class="bit-num">04</div>
+                <div class="bit-text" contenteditable="true" spellcheck="false">
+                  他顿了顿，补充了一句：<span class="kw">"那棵歪脖子树还在的。"</span>
+                </div>
+                <div class="bit-reactions">
+                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">35</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">2</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
+                  <span class="reaction-sep"></span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~10秒</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Bit 5 ── -->
+            <div class="bit-block">
+              <div class="bit-header">
+                <span class="bit-type-tag tag-callback">CALLBACK</span>
+                <span style="font-size:12px;color:var(--text-muted);font-weight:600;">回扣笑点</span>
+                <div class="bit-actions">
+                  <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
+                  <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+              </div>
+              <div class="bit-score-bar">
+                <span class="score-label">预期笑声</span>
+                <div class="score-track">
+                  <div class="score-fill" id="s5" style="width:0;background:linear-gradient(to right,#F5C842,#3ECFB0);"></div>
+                </div>
+                <span class="score-val">88%</span>
+              </div>
+              <div class="bit-content" style="padding-left:54px;">
+                <div class="bit-num">05</div>
+                <div class="bit-text" contenteditable="true" data-ph="继续写这个Bit，或按空格唤起AI…" spellcheck="false">
+                  所以现在我要走了，我去跟房东辞行。房东很感动，拉着我的手说：小李啊，你是我们小区<span class="kw">租金最准时</span>的租客，<span class="kw-purple">走了真可惜</span>。我当时眼眶都湿了——我以为他说的是我这个人。
+                </div>
+                <div class="bit-reactions">
+                  <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
+                  <span class="reaction-sep"></span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~40秒</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 添加 Bit -->
+            <div class="add-bit-row">
+              <div class="add-bit-line"></div>
+              <button class="add-bit-btn" onclick="addBit()">
+                <i class="fa-solid fa-plus"></i>
+                添加新段落
+              </button>
+              <div class="add-bit-line"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 底部快速写入 -->
+        <div class="editor-input-wrap">
+          <div class="input-row">
+            <div class="main-input-box">
+              <textarea class="main-textarea" id="mainInput" rows="2"
+            placeholder="快速记录一个想法，或让 AI 帮你展开成完整段落…"
+            onkeydown="mainKey(event)"></textarea>
+              <div class="input-bottom">
+                <div class="input-tag-picker">
+                  <button class="iti-btn tag-setup">S</button>
+                  <button class="iti-btn tag-punchline">P</button>
+                  <button class="iti-btn tag-tagline">T</button>
+                  <button class="iti-btn tag-callback">C</button>
+                </div>
+                <span class="inp-sep"></span>
+                <button style="border:none;background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;" onclick="aiExpand()">
+                  <i class="fa-solid fa-wand-sparkles" style="color:var(--purple);"></i>AI 展开
+                </button>
+              </div>
+            </div>
+            <button class="send-btn" onclick="quickSave()" title="加入稿件">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+          </div>
+          <div class="quick-words">
+            <span class="qw" onclick="fillQ('我今年——')">🔥 今年</span>
+            <span class="qw" onclick="fillQ('你们有没有经历过……')">🎤 共情开场</span>
+            <span class="qw" onclick="fillQ('所以我当时的反应是——')">⚡ 转折</span>
+            <span class="qw" onclick="fillQ('这让我想到——')">💡 联想</span>
+            <span class="qw" onclick="fillQ('最可笑的是……')">😂 加强</span>
+            <span class="qw" onclick="fillQ('结果呢？')">🔄 Callback</span>
+          </div>
+        </div>
+      </main>
+
+      <!-- ════════════ 右侧面板 ════════════ -->
+      <aside class="right-panel">
+        <div class="rp-head">
+          <div class="ai-ava">
+            <i class="fa-solid fa-robot"></i>
+            <span class="ai-pulse"></span>
+          </div>
+          <div class="rp-head-info">
+            <div class="rp-title">Riff AI</div>
+            <div class="rp-sub">笑点分析 · 实时优化</div>
+          </div>
+        </div>
+
+        <div class="rp-tabs">
+          <div class="rp-tab on" onclick="rpTab(this,'rt-analysis')">分析</div>
+          <div class="rp-tab" onclick="rpTab(this,'rt-chat')">对话</div>
+          <div class="rp-tab" onclick="rpTab(this,'rt-words')">词云</div>
+          <div class="rp-tab" onclick="rpTab(this,'rt-ref')">参考</div>
+        </div>
+
+        <!-- ── 分析 Tab ── -->
+        <div class="rp-body" id="rt-analysis">
+
+          <div class="sec-title">笑点密度曲线</div>
+          <div class="density-chart">
+            <div class="dc-label">
+              <span style="color:var(--text-muted);">全场节奏预测</span>
+              <span>平均 8.4/10 <i class="fa-solid fa-arrow-trend-up" style="font-size:10px;margin-left:2px;"></i></span>
+            </div>
+            <div class="density-bars" id="densityBars">
+              <!-- 由 JS 生成 -->
+            </div>
+            <div class="density-labels" id="densityLabels"></div>
+          </div>
+
+          <div class="sec-title">观众情绪弧线</div>
+          <div class="mood-timeline">
+            <div class="mood-seg"><span class="mood-emoji">😐</span>
+              <div class="mood-time">0-2min</div>
+              <div class="mood-val">65</div>
+            </div>
+            <div class="mood-seg"><span class="mood-emoji">😄</span>
+              <div class="mood-time">2-5min</div>
+              <div class="mood-val">78</div>
+            </div>
+            <div class="mood-seg"><span class="mood-emoji">😂</span>
+              <div class="mood-time">5-9min</div>
+              <div class="mood-val">92</div>
+            </div>
+            <div class="mood-seg"><span class="mood-emoji">🤣</span>
+              <div class="mood-time">9-14min</div>
+              <div class="mood-val">97</div>
+            </div>
+            <div class="mood-seg"><span class="mood-emoji">😄</span>
+              <div class="mood-time">14min+</div>
+              <div class="mood-val">82</div>
+            </div>
+          </div>
+
+          <div class="sec-title">节目数据</div>
+          <div class="metric-grid">
+            <div class="m-card">
+              <div class="m-val" style="color:var(--purple);">5</div>
+              <div class="m-label">段落数</div>
+            </div>
+            <div class="m-card">
+              <div class="m-val" style="color:var(--gold);">18<span style="font-size:12px;">分</span></div>
+              <div class="m-label">预计时长</div>
+            </div>
+            <div class="m-card">
+              <div class="m-val" style="color:var(--teal);">3</div>
+              <div class="m-label">高峰笑点</div>
+            </div>
+            <div class="m-card">
+              <div class="m-val" style="color:var(--orange);">8.4</div>
+              <div class="m-label">笑点密度</div>
+            </div>
+            <div class="m-card">
+              <div class="m-val" style="color:var(--pink);">62%</div>
+              <div class="m-label">完成度</div>
+            </div>
+            <div class="m-card">
+              <div class="m-val" style="color:var(--text-muted);">2</div>
+              <div class="m-label">Callback</div>
+            </div>
+          </div>
+
+          <div class="sec-title">AI 建议</div>
+          <div class="ai-tip-list">
+            <div class="ai-tip" onclick="">
+              <div class="ai-tip-icon">🎯</div>
+              <div class="ai-tip-body">
+                <div class="ai-tip-title">第4段是本场最强笑点</div>
+                <div class="ai-tip-desc">「那棵歪脖子树还在」这类意外转折往往在现场效果最佳，建议前后给足停顿。</div>
+              </div>
+              <span class="ai-tip-badge" style="background:rgba(62,207,176,0.12);color:var(--teal);">高优</span>
+            </div>
+            <div class="ai-tip" onclick="">
+              <div class="ai-tip-icon">⚠️</div>
+              <div class="ai-tip-body">
+                <div class="ai-tip-title">第3段节奏偏慢</div>
+                <div class="ai-tip-desc">铺垫长度超过预估 30%，建议压缩「问路」的情境描述，直接进入「邮局」这个转折点。</div>
+              </div>
+              <span class="ai-tip-badge" style="background:rgba(255,140,66,0.12);color:var(--orange);">优化</span>
+            </div>
+            <div class="ai-tip" onclick="">
+              <div class="ai-tip-icon">💡</div>
+              <div class="ai-tip-body">
+                <div class="ai-tip-title">缺少开场 Hook</div>
+                <div class="ai-tip-desc">建议在第1段前加一句强力 Hook，先把观众情绪调动起来再铺垫。</div>
+              </div>
+              <span class="ai-tip-badge" style="background:rgba(155,109,255,0.12);color:var(--purple);">建议</span>
+            </div>
+            <div class="ai-tip">
+              <div class="ai-tip-icon">🔄</div>
+              <div class="ai-tip-body">
+                <div class="ai-tip-title">Callback 机会</div>
+                <div class="ai-tip-desc">「游客」和「歪脖子树」均适合在结尾做双重 Callback，可以形成完整闭环。</div>
+              </div>
+              <span class="ai-tip-badge" style="background:rgba(245,200,66,0.12);color:var(--gold);">亮点</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── 对话 Tab ── -->
+        <div class="rp-body" id="rt-chat" style="display:none;">
+          <div class="sec-title">AI 对话</div>
+          <div class="chat-list" id="chatList">
+
+            <div class="chat-row">
+              <div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div>
+              <div>
+                <div class="chat-bub ai">你好！我已分析全部5段内容。整体风格偏「北漂情感共鸣」，笑点类型以 Observational + Tagline 为主，建议在中段增加一个自嘲型的 Bit 来制造情感对比，需要我生成示例吗？</div>
+                <div class="chat-acts">
+                  <button class="ca-btn ok" onclick="aiReply()"><i class="fa-solid fa-check"></i> 生成示例</button>
+                  <button class="ca-btn" onclick="aiReply2()"><i class="fa-solid fa-rotate"></i> 重新分析</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="typingRow" style="display:none;" class="chat-row typing-row">
+              <div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div>
+              <div class="dots-row">
+                <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 词云 Tab ── -->
+        <div class="rp-body" id="rt-words" style="display:none;">
+          <div class="sec-title">核心词汇</div>
+          <div class="word-cloud">
+            <span class="cloud-word" style="background:rgba(155,109,255,0.15);color:var(--purple);font-size:16px;">北京</span>
+            <span class="cloud-word" style="background:rgba(245,200,66,0.15);color:var(--gold);font-size:20px;">十年</span>
+            <span class="cloud-word" style="background:rgba(255,107,157,0.12);color:var(--pink);font-size:13px;">游客</span>
+            <span class="cloud-word" style="background:rgba(62,207,176,0.12);color:var(--teal);font-size:14px;">房租</span>
+            <span class="cloud-word" style="background:rgba(255,140,66,0.12);color:var(--orange);font-size:18px;">歪脖子树</span>
+            <span class="cloud-word" style="background:rgba(155,109,255,0.1);color:var(--purple);font-size:12px;">导航</span>
+            <span class="cloud-word" style="background:rgba(245,200,66,0.1);color:var(--gold);font-size:13px;">邮局</span>
+            <span class="cloud-word" style="background:rgba(255,77,109,0.12);color:var(--red);font-size:15px;">房东</span>
+            <span class="cloud-word" style="background:rgba(62,207,176,0.1);color:var(--teal);font-size:11px;">北漂</span>
+            <span class="cloud-word" style="background:rgba(255,107,157,0.1);color:var(--pink);font-size:17px;">租金</span>
+            <span class="cloud-word" style="background:rgba(155,109,255,0.12);color:var(--purple);font-size:14px;">方向</span>
+            <span class="cloud-word" style="background:rgba(245,200,66,0.12);color:var(--gold);font-size:12px;">红点</span>
+          </div>
+
+          <div class="sec-title" style="margin-top:16px;">情感频率分析</div>
+          <div class="chart-wrap"><canvas id="emoChart"></canvas></div>
+
+          <div class="sec-title" style="margin-top:16px;">重复词频警告</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <span style="font-size:12px;color:var(--text-soft);flex:1;">「北京」</span>
+              <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
+                <div style="width:90%;height:100%;background:var(--red);border-radius:2px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:var(--red);">9次 ⚠️</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <span style="font-size:12px;color:var(--text-soft);flex:1;">「我」</span>
+              <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
+                <div style="width:70%;height:100%;background:var(--orange);border-radius:2px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:var(--orange);">14次</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+              <span style="font-size:12px;color:var(--text-soft);flex:1;">「十年」</span>
+              <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
+                <div style="width:40%;height:100%;background:var(--teal);border-radius:2px;"></div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:var(--teal);">4次 ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── 参考 Tab ── -->
+        <div class="rp-body" id="rt-ref" style="display:none;">
+          <div class="sec-title">经典脱口秀手法</div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="padding:11px 13px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(155,109,255,0.35)'" onmouseout="this.style.borderColor=''">
+              <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-retweet" style="font-size:10px;"></i>Callback 技巧</div>
+              <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">在节目后段重新提起前段的某个细节/词语，制造"哦！原来如此"的意外感，往往能收获全场最强笑声。</div>
+            </div>
+            <div style="padding:11px 13px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(245,200,66,0.35)'" onmouseout="this.style.borderColor=''">
+              <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px;"></i>Rule of Three</div>
+              <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">前两个词建立规律，第三个词打破期待。「我见过A，我见过B，但我没见过C」——C就是笑点所在。</div>
+            </div>
+            <div style="padding:11px 13px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(62,207,176,0.35)'" onmouseout="this.style.borderColor=''">
+              <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-mirror" style="font-size:10px;"></i>Misdirection</div>
+              <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">引导观众往一个方向思考，然后用完全相反或意料之外的方向作为结尾，形成认知落差产生笑声。</div>
+            </div>
+            <div style="padding:11px 13px;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(255,107,157,0.35)'" onmouseout="this.style.borderColor=''">
+              <div style="font-size:12px;font-weight:700;color:var(--pink);margin-bottom:5px;display:flex;align-items:center;gap:6px;"><i class="fa-solid fa-person" style="font-size:10px;"></i>自嘲型共情</div>
+              <div style="font-size:11px;color:var(--text-muted);line-height:1.55;">表演者先把自己贬低，观众会在笑中产生"我也这样"的代入感，笑声中带着共情，效果更持久。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部输入 -->
+        <div class="rp-footer">
+          <div class="rp-input-wrap">
+            <textarea class="rp-textarea" id="rpInput" rows="2"
+          placeholder="问 Riff AI 任何关于这场节目的问题…"
+          onkeydown="rpKey(event)"></textarea>
+            <div class="rp-inp-footer">
+              <span class="rp-inp-hint"><kbd style="font-size:9px;background:var(--bg-raised);border:1px solid var(--border);padding:1px 4px;border-radius:3px;color:var(--text-muted);">Enter</kbd> 发送</span>
+              <button class="mini-send" onclick="rpSend()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+          </div>
+          <div class="quick-chips-rp">
+            <span class="rp-chip" onclick="rpFill('帮我优化第2段的Punchline')">优化Punchline</span>
+            <span class="rp-chip" onclick="rpFill('生成一个Callback')">生成Callback</span>
+            <span class="rp-chip" onclick="rpFill('哪个段落最需要改进')">哪里最弱</span>
+            <span class="rp-chip" onclick="rpFill('给我一个开场Hook')">开场Hook</span>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- ══ 状态栏 ══ -->
+    <div class="statusbar">
+      <div class="sb"><i class="fa-solid fa-microphone-lines"></i> 北漂十年·个人脱口秀</div>
+      <div class="sb"><i class="fa-solid fa-list-ol"></i> <b id="bitCount">5</b> 段</div>
+      <div class="sb"><i class="fa-regular fa-clock"></i> 约 <b>18</b> 分钟</div>
+      <div class="sb"><i class="fa-solid fa-face-laugh-squint"></i> 笑点密度 <b style="color:var(--gold);">8.4</b></div>
+      <div class="sb-r">
+        <div class="sb"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已自动保存</div>
+        <div class="sb" style="border-right:none;">完成度 <b style="color:var(--purple);">62%</b></div>
+      </div>
+    </div>
+
+    <!-- ══ 排练模式弹窗 ══ -->
+    <div class="modal-bg" id="performModal">
+      <div class="modal-box">
+        <button class="modal-close" onclick="closePerform()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="modal-title">🎤 进入排练模式</div>
+        <div class="modal-sub">选择排练参数，模拟真实演出环境</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div style="padding:16px;background:var(--bg-raised);border:2px solid var(--border-bright);border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s;" onclick="this.parentElement.querySelectorAll('div').forEach(d=>d.style.borderColor='');this.style.borderColor='var(--purple)'">
+            <i class="fa-solid fa-user-check" style="font-size:24px;color:var(--purple);display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:700;color:var(--text-white);">独自排练</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">自我提词 + 计时</div>
+          </div>
+          <div style="padding:16px;background:var(--bg-raised);border:2px solid var(--border-bright);border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s;" onclick="this.parentElement.querySelectorAll('div').forEach(d=>d.style.borderColor='');this.style.borderColor='var(--gold)'">
+            <i class="fa-solid fa-users" style="font-size:24px;color:var(--gold);display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:700;color:var(--text-white);">小圈子试演</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">邀请朋友实时评分</div>
+          </div>
+          <div style="padding:16px;background:var(--bg-raised);border:2px solid var(--border-bright);border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s;" onclick="this.parentElement.querySelectorAll('div').forEach(d=>d.style.borderColor='');this.style.borderColor='var(--pink)'">
+            <i class="fa-solid fa-video" style="font-size:24px;color:var(--pink);display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:700;color:var(--text-white);">录像回放</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">录音 + AI 节奏分析</div>
+          </div>
+          <div style="padding:16px;background:var(--bg-raised);border:2px solid var(--border-bright);border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s;" onclick="this.parentElement.querySelectorAll('div').forEach(d=>d.style.borderColor='');this.style.borderColor='var(--teal)'">
+            <i class="fa-solid fa-robot" style="font-size:24px;color:var(--teal);display:block;margin-bottom:8px;"></i>
+            <div style="font-size:13px;font-weight:700;color:var(--text-white);">AI 观众模拟</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">虚拟观众实时反应</div>
+          </div>
+        </div>
+
+        <button class="tb-btn btn-purple" style="width:100%;justify-content:center;padding:12px 0;font-size:14px;border-radius:10px;" onclick="closePerform()">
+          <i class="fa-solid fa-play"></i>&nbsp; 开始排练
+        </button>
+      </div>
+    </div>
+
+    <!-- 选中浮动条 -->
+    <div class="float-bar" id="floatBar">
+      <button class="fb-btn magic"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 优化笑点</button>
+      <button class="fb-btn gold"><i class="fa-solid fa-highlighter"></i> 标记笑点</button>
+      <div class="fb-sep"></div>
+      <button class="fb-btn plain"><i class="fa-solid fa-bold"></i></button>
+      <button class="fb-btn plain"><i class="fa-solid fa-italic"></i></button>
+      <button class="fb-btn plain"><i class="fa-regular fa-comment"></i> 备注</button>
+    </div>
+
+    <script src="https://cdn.jsdmirror.com/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <script>
+      // ══ 初始化 ══
+      document.addEventListener('DOMContentLoaded', () => {
+        // 进度条动画
+        setTimeout(() => {
+          [
+            ['s1', 62],
+            ['s2', 91],
+            ['s3', 76],
+            ['s4', 84],
+            ['s5', 88]
+          ].forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (el) el.style.width = val + '%';
+          });
+        }, 300);
+        // 笑点密度柱状图
+        const bars = [{
+            val: 6,
+            label: '开场',
+            color: 'rgba(155,109,255,'
+          },
+          {
+            val: 8,
+            label: 'Bit1',
+            color: 'rgba(62,207,176,'
+          },
+          {
+            val: 9,
+            label: 'Bit2',
+            color: 'rgba(255,140,66,'
+          },
+          {
+            val: 7,
+            label: 'Bit3',
+            color: 'rgba(155,109,255,'
+          },
+          {
+            val: 10,
+            label: 'Bit4',
+            color: 'rgba(245,200,66,'
+          },
+          {
+            val: 5,
+            label: '过渡',
+            color: 'rgba(255,107,157,'
+          },
+          {
+            val: 9,
+            label: 'Bit5',
+            color: 'rgba(62,207,176,'
+          },
+          {
+            val: 8,
+            label: '结尾',
+            color: 'rgba(245,200,66,'
+          },
+        ];
+        const barsEl = document.getElementById('densityBars');
+        const labelsEl = document.getElementById('densityLabels');
+        if (barsEl) {
+          bars.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'db-bar';
+            div.setAttribute('data-val', b.val + '/10');
+            const h = (b.val / 10) * 50;
+            div.style.height = '0';
+            div.style.background = b.color + '0.6)';
+            div.style.borderTop = '2px solid ' + b.color + '1)';
+            barsEl.appendChild(div);
+            setTimeout(() => {
+              div.style.transition = 'height 1s ease';
+              div.style.height = h + 'px';
+            }, 200 + bars.indexOf(b) * 80);
+            const lbl = document.createElement('div');
+            lbl.className = 'dl-item';
+            lbl.textContent = b.label;
+            labelsEl.appendChild(lbl);
+          });
+        }
+        // 情感分析雷达图
+        const emoCtx = document.getElementById('emoChart');
+        if (emoCtx) {
+          new Chart(emoCtx, {
+            type: 'radar',
+            data: {
+              labels: ['自嘲', '观察', '共情', '转折', '荒诞', '温情'],
+              datasets: [{
+                data: [7, 9, 8, 6, 5, 4],
+                backgroundColor: 'rgba(155,109,255,0.2)',
+                borderColor: 'rgba(155,109,255,0.8)',
+                borderWidth: 1.5,
+                pointBackgroundColor: '#9B6DFF',
+                pointRadius: 3,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false
+                }
+              },
+              scales: {
+                r: {
+                  grid: {
+                    color: 'rgba(255,255,255,0.06)'
+                  },
+                  angleLines: {
+                    color: 'rgba(255,255,255,0.06)'
+                  },
+                  pointLabels: {
+                    color: '#6E6A84',
+                    font: {
+                      size: 10
+                    }
+                  },
+                  ticks: {
+                    display: false
+                  },
+                  min: 0,
+                  max: 10,
+                }
+              }
+            }
+          });
+        }
+      });
+      // ══ Tab 切换 ══
+      function rpTab(el, id) {
+        document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('on'));
+        el.classList.add('on');
+        ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(t => {
+          const d = document.getElementById(t);
+          if (d) d.style.display = 'none';
+        });
+        const target = document.getElementById(id);
+        if (target) target.style.display = 'block';
+      }
+      // ══ AI 对话 ══
+      function rpKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          rpSend();
+        }
+      }
+
+      function rpFill(t) {
+        document.getElementById('rpInput').value = t;
+        document.getElementById('rpInput').focus();
+      }
+
+      function rpSend() {
+        const inp = document.getElementById('rpInput');
+        const val = inp.value.trim();
+        if (!val) return;
+        inp.value = '';
+        // 激活对话 tab
+        document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('on'));
+        document.querySelectorAll('.rp-tab')[1].classList.add('on');
+        ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(t => {
+          const d = document.getElementById(t);
+          if (d) d.style.display = 'none';
+        });
+        document.getElementById('rt-chat').style.display = 'block';
+        const list = document.getElementById('chatList');
+        // 用户消息
+        const uDiv = document.createElement('div');
+        uDiv.className = 'chat-row me fade-in';
+        uDiv.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${val}</div></div>`;
+        const tr = document.getElementById('typingRow');
+        list.insertBefore(uDiv, tr);
+        tr.style.display = 'flex';
+        scrollChat();
+        setTimeout(() => {
+          tr.style.display = 'none';
+          const replies = [
+            `好问题！根据当前稿件分析，${val.slice(0,10)}这部分的关键在于"Rule of Three"技法——前两个段落建立了节奏，第三段可以在意料之外打破观众预期。要我为你生成一个具体的示例吗？`,
+            `我注意到你的稿件中「北京」和「游客」形成了很好的对照，如果在结尾再次呼应「游客」这个身份，用一句反转收尾，效果会非常强。要我起草一下结尾段落吗？`,
+            `从你目前5段的结构来看，节奏上有一个潜在的问题：第3、4段连续两段都是「观察类」，中间缺少一个自嘲型的情感过渡，建议插入一个更私人化的段落。我可以帮你生成。`,
+          ];
+          const r = replies[Math.floor(Math.random() * replies.length)];
+          const aiDiv = document.createElement('div');
+          aiDiv.className = 'chat-row fade-in';
+          aiDiv.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${r}</div><div class="chat-acts"><button class="ca-btn ok"><i class="fa-solid fa-check"></i> 好的，生成</button><button class="ca-btn"><i class="fa-solid fa-rotate"></i> 换个角度</button></div></div>`;
+          list.insertBefore(aiDiv, tr);
+          scrollChat();
+        }, 1600 + Math.random() * 600);
+      }
+
+      function scrollChat() {
+        const c = document.getElementById('rt-chat');
+        if (c) setTimeout(() => c.scrollTop = c.scrollHeight, 80);
+      }
+
+      function aiReply() {
+        rpFill('帮我生成一段自嘲型 Bit，主题关于第一次在北京面试');
+        rpSend();
+      }
+
+      function aiReply2() {
+        rpFill('请从观众角度重新分析整个节目的弱点');
+        rpSend();
+      }
+      // ══ 主编辑区 ══
+      function mainKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          quickSave();
+        }
+      }
+
+      function fillQ(t) {
+        document.getElementById('mainInput').value = t;
+        document.getElementById('mainInput').focus();
+      }
+
+      function quickSave() {
+        const val = document.getElementById('mainInput').value.trim();
+        if (!val) return;
+        document.getElementById('mainInput').value = '';
+        // 简单提示
+        const tip = document.createElement('div');
+        tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9000;animation:fadein 0.3s ease;';
+        tip.textContent = '✓ 已加入稿件队列';
+        document.body.appendChild(tip);
+        setTimeout(() => tip.remove(), 2000);
+      }
+
+      function aiExpand() {
+        const val = document.getElementById('mainInput').value.trim();
+        if (!val) {
+          fillQ('');
+          return;
+        }
+        rpFill('请将以下想法展开成完整段落：' + val);
+        rpSend();
+      }
+
+      function doSuggest() {
+        rpFill('请帮我生成一个 Callback 段落，回扣「游客」这个关键词作为结尾');
+        document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('on'));
+        document.querySelectorAll('.rp-tab')[1].classList.add('on');
+        ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(t => {
+          const d = document.getElementById(t);
+          if (d) d.style.display = 'none';
+        });
+        document.getElementById('rt-chat').style.display = 'block';
+        rpSend();
+      }
+      // ══ 添加 Bit ══
+      let bitCount = 5;
+
+      function addBit() {
+        bitCount++;
+        document.getElementById('bitCount').textContent = bitCount;
+        const types = [{
+            cls: 'tag-setup',
+            label: 'SETUP',
+            name: '铺垫段落'
+          },
+          {
+            cls: 'tag-punchline',
+            label: 'PUNCHLINE',
+            name: '核心笑点'
+          },
+          {
+            cls: 'tag-tagline',
+            label: 'TAGLINE',
+            name: '补充笑点'
+          },
+          {
+            cls: 'tag-callback',
+            label: 'CALLBACK',
+            name: '回扣笑点'
+          },
+        ];
+        const t = types[Math.floor(Math.random() * types.length)];
+        const colors = ['linear-gradient(to right,#9B6DFF,#FF6B9D)', 'linear-gradient(to right,#F5C842,#FF8C42)', 'linear-gradient(to right,#3ECFB0,#9B6DFF)'];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        const div = document.createElement('div');
+        div.className = 'bit-block fade-in';
+        div.innerHTML = `
+    <div class="bit-header">
+      <span class="bit-type-tag ${t.cls}">${t.label}</span>
+      <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${t.name}</span>
+      <div class="bit-actions" style="opacity:1;">
+        <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
+        <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+        <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
+        <button class="bit-act-btn danger" onclick="this.closest('.bit-block').remove();document.getElementById('bitCount').textContent=--bitCount;"><i class="fa-regular fa-trash-can"></i></button>
+      </div>
+    </div>
+    <div class="bit-score-bar">
+      <span class="score-label">预期笑声</span>
+      <div class="score-track"><div class="score-fill" style="width:0;background:${c};transition:width 1s ease;"></div></div>
+      <span class="score-val">—</span>
+    </div>
+    <div class="bit-content" style="padding-left:54px;">
+      <div class="bit-num">${String(bitCount).padStart(2,'0')}</div>
+      <div class="bit-text" contenteditable="true" spellcheck="false" data-ph="在这里开始写这个 Bit…"></div>
+      <div class="bit-reactions">
+        <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+        <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
+        <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
+        <span class="reaction-sep"></span>
+        <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
+      </div>
+    </div>`;
+        const addRow = document.querySelector('.add-bit-row');
+        addRow.parentNode.insertBefore(div, addRow);
+        div.querySelector('.bit-text').focus();
+        // 滚动到新段落
+        setTimeout(() => div.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        }), 100);
+      }
+      // ══ 弹窗 ══
+      function openPerform() {
+        document.getElementById('performModal').classList.add('open');
+      }
+
+      function closePerform() {
+        document.getElementById('performModal').classList.remove('open');
+      }
+      document.getElementById('performModal').addEventListener('click', e => {
+        if (e.target === document.getElementById('performModal')) closePerform();
+      });
+      // ══ 选中浮动条 ══
+      document.querySelectorAll('.bit-text').forEach(el => {
+        el.addEventListener('mouseup', e => {
+          const sel = window.getSelection();
+          if (sel && sel.toString().trim().length > 2) {
+            const r = sel.getRangeAt(0).getBoundingClientRect();
+            const fb = document.getElementById('floatBar');
+            fb.style.left = Math.min(r.left + r.width / 2 - 140, window.innerWidth - 310) + 'px';
+            fb.style.top = (r.top + window.scrollY - 44) + 'px';
+            fb.classList.add('show');
+          }
+        });
+      });
+      document.addEventListener('mousedown', e => {
+        if (!e.target.closest('#floatBar')) document.getElementById('floatBar').classList.remove('show');
+      });
+      // ══ 反应按钮 ══
+      document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const siblings = btn.parentElement.querySelectorAll('.reaction-btn');
+          siblings.forEach(s => s.classList.remove('on'));
+          btn.classList.add('on');
+          const count = btn.querySelector('b');
+          if (count) count.textContent = parseInt(count.textContent) + 1;
+        });
+      });
+      // ══ 格式按钮 ══
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const icons = ['fa-bold', 'fa-italic', 'fa-highlighter', 'fa-pause', 'fa-exclamation'];
+          const i = btn.querySelector('i');
+          if (i && icons.some(c => i.classList.contains(c))) btn.classList.toggle('on');
+        });
+      });
+      // ══ 素材库 Tab ══
+      document.querySelectorAll('.lp-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.lp-tab').forEach(t => t.classList.remove('on'));
+          tab.classList.add('on');
+        });
+      });
+      // ══ 模式切换 ══
+      document.querySelectorAll('.pt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.pt-btn').forEach(b => b.classList.remove('on'));
+          btn.classList.add('on');
+        });
+      });
+    </script>
+    <script>
+      (() => {
+        const STORAGE_KEY = 'riffmaster.prototype.v1';
+        const autosaveDelay = 450;
+        let autosaveTimer = null;
+
+        const bitTypes = {
+          SETUP: { cls: 'tag-setup', label: 'SETUP', name: '开场铺垫' },
+          PUNCHLINE: { cls: 'tag-punchline', label: 'PUNCHLINE', name: '核心笑点' },
+          TAGLINE: { cls: 'tag-tagline', label: 'TAGLINE', name: '补充笑点' },
+          CALLBACK: { cls: 'tag-callback', label: 'CALLBACK', name: '回扣笑点' },
+          OBSERVATIONAL: { cls: 'tag-observational', label: '观察类', name: '生活素材' }
+        };
+
+        function initEnhancedPrototype() {
+          restoreDraft();
+          updateBitNumbers();
+          bindTitleAutosave();
+          bindDelegatedEditorActions();
+          bindMaterialFiltering();
+          bindFloatingToolbarActions();
+          overridePrototypeFunctions();
+          updateStats();
+          markSaved();
+        }
+
+        function restoreDraft() {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+
+          try {
+            const draft = JSON.parse(raw);
+            if (draft.title) {
+              const titleInput = document.querySelector('.show-title-input');
+              if (titleInput) titleInput.value = draft.title;
+            }
+            if (Array.isArray(draft.bits) && draft.bits.length) {
+              document.querySelectorAll('.bit-block').forEach(bit => bit.remove());
+              const addRow = document.querySelector('.add-bit-row');
+              draft.bits.forEach(bit => addRow.parentNode.insertBefore(renderBit(bit), addRow));
+            }
+          } catch (error) {
+            console.warn('RiffMaster draft restore failed', error);
+            localStorage.removeItem(STORAGE_KEY);
+          }
+        }
+
+        function bindTitleAutosave() {
+          const titleInput = document.querySelector('.show-title-input');
+          if (!titleInput) return;
+          titleInput.addEventListener('input', scheduleSave);
+          titleInput.addEventListener('blur', () => {
+            if (!titleInput.value.trim()) titleInput.value = '未命名节目';
+            scheduleSave();
+          });
+        }
+
+        function bindDelegatedEditorActions() {
+          document.addEventListener('input', event => {
+            if (event.target.matches('.bit-text[contenteditable="true"]')) {
+              updateBitDuration(event.target.closest('.bit-block'));
+              scheduleSave();
+            }
+          });
+
+          document.addEventListener('click', event => {
+            const reaction = event.target.closest('.reaction-btn');
+            if (reaction) {
+              const siblings = reaction.parentElement.querySelectorAll('.reaction-btn');
+              siblings.forEach(item => item.classList.remove('on'));
+              reaction.classList.add('on');
+              const count = reaction.querySelector('b');
+              if (count) count.textContent = String(Number(count.textContent || 0) + 1);
+              scheduleSave();
+              return;
+            }
+
+            const action = event.target.closest('.bit-act-btn');
+            if (action) {
+              const block = action.closest('.bit-block');
+              const actions = Array.from(action.parentElement.querySelectorAll('.bit-act-btn'));
+              const index = actions.indexOf(action);
+              if (index === 0) optimizeBit(block);
+              if (index === 2) duplicateBit(block);
+              if (index === 3) deleteBit(block);
+            }
+          });
+        }
+
+        function bindMaterialFiltering() {
+          const searchInput = document.querySelector('.lp-search input');
+          if (searchInput) searchInput.addEventListener('input', filterMaterials);
+
+          document.querySelectorAll('.lp-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+              setTimeout(filterMaterials, 0);
+            });
+          });
+        }
+
+        function bindFloatingToolbarActions() {
+          const floatBar = document.getElementById('floatBar');
+          if (!floatBar) return;
+
+          floatBar.addEventListener('click', event => {
+            const button = event.target.closest('.fb-btn');
+            if (!button) return;
+            const label = button.textContent.trim();
+
+            if (label.includes('AI')) {
+              const selectedText = window.getSelection().toString().trim();
+              if (selectedText) sendAiPrompt(`请优化这句笑点：${selectedText}`);
+            } else if (label.includes('标记')) {
+              document.execCommand('hiliteColor', false, 'rgba(245, 200, 66, 0.18)');
+            } else if (button.querySelector('.fa-bold')) {
+              document.execCommand('bold');
+            } else if (button.querySelector('.fa-italic')) {
+              document.execCommand('italic');
+            } else if (label.includes('备注')) {
+              showToast('已添加备注标记');
+            }
+            scheduleSave();
+          });
+        }
+
+        function overridePrototypeFunctions() {
+          window.addBit = function addBitFromPrototype(data = {}) {
+            const type = data.type || currentSelectedType();
+            const bit = {
+              type,
+              html: data.html || '',
+              score: data.score || '—',
+              reactions: data.reactions || { laugh: 0, smile: 0, flat: 0 },
+              duration: data.duration || '—'
+            };
+            const addRow = document.querySelector('.add-bit-row');
+            const el = renderBit(bit);
+            addRow.parentNode.insertBefore(el, addRow);
+            updateBitNumbers();
+            updateStats();
+            const text = el.querySelector('.bit-text');
+            if (text) text.focus();
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+            scheduleSave();
+          };
+
+          window.quickSave = function quickSaveEnhanced() {
+            const input = document.getElementById('mainInput');
+            const value = input.value.trim();
+            if (!value) return;
+            window.addBit({ html: escapeHtml(value), type: currentSelectedType(), duration: estimateDurationLabel(value) });
+            input.value = '';
+            showToast('已加入稿件');
+          };
+
+          window.aiExpand = function aiExpandEnhanced() {
+            const input = document.getElementById('mainInput');
+            const value = input.value.trim();
+            if (!value) return;
+            sendAiPrompt(`请将以下想法展开成完整段落：${value}`, {
+              insertText: `${value}。真正的问题不是这件事本身，而是我发现自己已经熟练到能把它讲成段子。`
+            });
+          };
+
+          window.doSuggest = function doSuggestEnhanced() {
+            const html = '后来我才明白，北京不是不留我。北京只是很认真地给我办了一张<span class="kw">十年游客年卡</span>。唯一的会员权益是：每次迷路，都能看到那棵歪脖子树还在。';
+            sendAiPrompt('请帮我生成一个 Callback 段落，回扣「游客」这个关键词作为结尾', {
+              insertHtml: html,
+              type: 'CALLBACK'
+            });
+          };
+
+          window.rpSend = function rpSendEnhanced() {
+            const input = document.getElementById('rpInput');
+            const value = input.value.trim();
+            if (!value) return;
+            input.value = '';
+            sendAiPrompt(value);
+          };
+
+          window.rpFill = function rpFillEnhanced(text) {
+            const input = document.getElementById('rpInput');
+            input.value = text;
+            input.focus();
+          };
+
+          window.aiReply = function aiReplyEnhanced() {
+            sendAiPrompt('帮我生成一段自嘲型 Bit，主题关于第一次在北京面试', {
+              insertText: '我第一次在北京面试，紧张到提前一个小时到楼下。保安问我找谁，我说找未来。保安看了我一眼，说：未来在对面写字楼。'
+            });
+          };
+
+          window.aiReply2 = function aiReply2Enhanced() {
+            sendAiPrompt('请从观众角度重新分析整个节目的弱点');
+          };
+        }
+
+        function serializeDraft() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+              type: detectBitType(block),
+              html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function scheduleSave() {
+          markSaving();
+          clearTimeout(autosaveTimer);
+          autosaveTimer = setTimeout(() => {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeDraft()));
+              markSaved();
+            } catch (error) {
+              markSaveError();
+            }
+          }, autosaveDelay);
+        }
+
+        function renderBit(bit) {
+          const meta = bitTypes[bit.type] || bitTypes.SETUP;
+          const score = bit.score || '—';
+          const scoreWidth = String(score).includes('%') ? score : '0%';
+          const reactions = bit.reactions || { laugh: 0, smile: 0, flat: 0 };
+          const div = document.createElement('div');
+          div.className = 'bit-block fade-in';
+          div.innerHTML = `
+            <div class="bit-header">
+              <span class="bit-type-tag ${meta.cls}">${meta.label}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${meta.name}</span>
+              <div class="bit-actions">
+                <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
+                <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
+                <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>
+            <div class="bit-score-bar">
+              <span class="score-label">预期笑声</span>
+              <div class="score-track"><div class="score-fill" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
+              <span class="score-val">${score}</span>
+            </div>
+            <div class="bit-content" style="padding-left:54px;">
+              <div class="bit-num">00</div>
+              <div class="bit-text" contenteditable="true" spellcheck="false" data-ph="在这里开始写这个 Bit…">${sanitizeHtml(bit.html || '')}</div>
+              <div class="bit-reactions">
+                <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">${reactions.laugh || 0}</b></button>
+                <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">${reactions.smile || 0}</b></button>
+                <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">${reactions.flat || 0}</b></button>
+                <span class="reaction-sep"></span>
+                <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ${bit.duration || '—'}</span>
+              </div>
+            </div>`;
+          return div;
+        }
+
+        function duplicateBit(block) {
+          if (!block) return;
+          const bit = serializeBlock(block);
+          const copy = renderBit(bit);
+          block.after(copy);
+          updateBitNumbers();
+          updateStats();
+          scheduleSave();
+          showToast('已复制段落');
+        }
+
+        function deleteBit(block) {
+          if (!block) return;
+          if (document.querySelectorAll('.bit-block').length <= 1) {
+            showToast('至少保留一个段落');
+            return;
+          }
+          block.remove();
+          updateBitNumbers();
+          updateStats();
+          scheduleSave();
+          showToast('已删除段落');
+        }
+
+        function optimizeBit(block) {
+          if (!block) return;
+          const text = block.querySelector('.bit-text')?.innerText.trim() || '';
+          sendAiPrompt(`请优化这段 Bit：${text}`, {
+            insertText: `${text} 但最荒诞的是，我以为这是生活给我的考验，后来发现这只是北京给我的续租提醒。`
+          });
+        }
+
+        function sendAiPrompt(prompt, action = {}) {
+          activateChatTab();
+          appendChatMessage('me', prompt);
+          const typing = document.getElementById('typingRow');
+          if (typing) typing.style.display = 'flex';
+          scrollChat();
+
+          setTimeout(() => {
+            if (typing) typing.style.display = 'none';
+            const reply = buildAiReply(prompt, action);
+            appendChatMessage('ai', reply.text, action);
+            scrollChat();
+          }, 900);
+        }
+
+        function buildAiReply(prompt, action) {
+          if (prompt.includes('Callback') || prompt.includes('回扣')) {
+            return { text: '我建议用「游客」做身份回扣，再用「歪脖子树」做场景回扣，结尾会更完整。' };
+          }
+          if (prompt.includes('哪里最弱') || prompt.includes('弱点')) {
+            return { text: '当前最弱的是第3段：铺垫信息略多，建议提前出现「邮局」这个转折词，并缩短问路过程。' };
+          }
+          if (prompt.includes('Hook') || prompt.includes('开场')) {
+            action.insertText = '我决定离开北京那天，第一反应不是难过，是终于不用再假装自己听得懂中介说的“南北通透”了。';
+            action.type = 'SETUP';
+            return { text: '我生成了一个更直接的开场 Hook，可以先抛出“离开北京”的反常情绪，再进入十年北漂。' };
+          }
+          return { text: '我给你一个可执行方向：压缩铺垫，把关键词放到句尾，并在下一句用更私人化的自嘲承接。' };
+        }
+
+        function appendChatMessage(role, text, action = {}) {
+          const list = document.getElementById('chatList');
+          const typing = document.getElementById('typingRow');
+          if (!list || !typing) return;
+
+          const row = document.createElement('div');
+          row.className = role === 'me' ? 'chat-row me fade-in' : 'chat-row fade-in';
+          if (role === 'me') {
+            row.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
+          } else {
+            const actionHtml = (action.insertText || action.insertHtml) ?
+              `<div class="chat-acts"><button class="ca-btn ok" data-insert-ai="1"><i class="fa-solid fa-check"></i> 插入为新段落</button><button class="ca-btn" data-copy-ai="1"><i class="fa-regular fa-copy"></i> 复制建议</button></div>` :
+              `<div class="chat-acts"><button class="ca-btn" onclick="rpFill('换个更自嘲的角度')"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
+            row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actionHtml}</div>`;
+            const insert = row.querySelector('[data-insert-ai]');
+            if (insert) {
+              insert.addEventListener('click', () => {
+                window.addBit({
+                  type: action.type || 'CALLBACK',
+                  html: action.insertHtml || escapeHtml(action.insertText),
+                  duration: estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))
+                });
+              });
+            }
+          }
+          list.insertBefore(row, typing);
+        }
+
+        function activateChatTab() {
+          document.querySelectorAll('.rp-tab').forEach(tab => tab.classList.remove('on'));
+          document.querySelectorAll('.rp-tab')[1]?.classList.add('on');
+          ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = id === 'rt-chat' ? 'block' : 'none';
+          });
+        }
+
+        function filterMaterials() {
+          const query = (document.querySelector('.lp-search input')?.value || '').trim().toLowerCase();
+          const activeTab = document.querySelector('.lp-tab.on')?.textContent.trim() || '全部';
+          document.querySelectorAll('.mat-group').forEach(group => {
+            let visibleCount = 0;
+            const groupLabel = group.querySelector('.mat-group-label')?.textContent.trim() || '';
+            group.querySelectorAll('.mat-item').forEach(item => {
+              const text = item.textContent.toLowerCase();
+              const matchesQuery = !query || text.includes(query);
+              const matchesTab = activeTab === '全部' ||
+                (activeTab === '段子' && groupLabel === '当前节目') ||
+                (activeTab === '话题' && groupLabel === '话题池') ||
+                (activeTab === '金句' && text.includes('金句'));
+              const visible = matchesQuery && matchesTab;
+              item.style.display = visible ? 'flex' : 'none';
+              if (visible) visibleCount++;
+            });
+            group.style.display = visibleCount ? 'block' : 'none';
+          });
+        }
+
+        function serializeBlock(block) {
+          return {
+            type: detectBitType(block),
+            html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
+            score: block.querySelector('.score-val')?.textContent || '—',
+            duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+            reactions: {
+              laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+              smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+              flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+            }
+          };
+        }
+
+        function detectBitType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (!tag) return 'SETUP';
+          if (tag.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function currentSelectedType() {
+          const value = document.querySelector('.tool-select')?.value || 'Setup';
+          if (value === 'Punchline') return 'PUNCHLINE';
+          if (value === 'Tagline') return 'TAGLINE';
+          if (value === 'Callback') return 'CALLBACK';
+          if (value === '观察类') return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function updateBitNumbers() {
+          const blocks = document.querySelectorAll('.bit-block');
+          blocks.forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(blocks.length);
+        }
+
+        function updateStats() {
+          const blocks = Array.from(document.querySelectorAll('.bit-block'));
+          const scores = blocks.map(block => Number((block.querySelector('.score-val')?.textContent || '').replace('%', ''))).filter(Boolean);
+          const density = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length / 10).toFixed(1) : '—';
+          document.querySelectorAll('.laugh-val').forEach(el => el.textContent = density);
+          const completion = Math.min(100, Math.round(blocks.filter(block => block.querySelector('.bit-text')?.innerText.trim().length > 10).length / Math.max(blocks.length, 1) * 80 + 12));
+          document.querySelectorAll('.sp-fill').forEach(el => el.style.width = `${completion}%`);
+          const completionEl = Array.from(document.querySelectorAll('.statusbar b')).find(el => el.parentElement?.textContent.includes('完成度'));
+          if (completionEl) completionEl.textContent = `${completion}%`;
+        }
+
+        function updateBitDuration(block) {
+          if (!block) return;
+          const text = block.querySelector('.bit-text')?.innerText.trim() || '';
+          const badge = block.querySelector('.time-badge');
+          if (badge) badge.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ${estimateDurationLabel(text)}`;
+          updateStats();
+        }
+
+        function estimateDurationLabel(text) {
+          if (!text) return '—';
+          return `~${Math.max(10, Math.round(text.length / 4))}秒`;
+        }
+
+        function scrollChat() {
+          const chat = document.getElementById('rt-chat');
+          if (chat) setTimeout(() => chat.scrollTop = chat.scrollHeight, 60);
+        }
+
+        function markSaving() {
+          setSaveLabel('保存中…', 'var(--gold)');
+        }
+
+        function markSaved() {
+          setSaveLabel('已自动保存', 'var(--teal)');
+        }
+
+        function markSaveError() {
+          setSaveLabel('保存失败', 'var(--red)');
+        }
+
+        function setSaveLabel(text, color) {
+          const item = document.querySelector('.sb-r .sb:first-child');
+          if (!item) return;
+          item.innerHTML = `<i class="fa-solid fa-circle-check" style="color:${color};"></i> ${text}`;
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9000;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function stripHtml(html) {
+          const div = document.createElement('div');
+          div.innerHTML = html || '';
+          return div.textContent || '';
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        function sanitizeHtml(html) {
+          const template = document.createElement('template');
+          template.innerHTML = html || '';
+          template.content.querySelectorAll('script, style, iframe, object, embed').forEach(node => node.remove());
+          template.content.querySelectorAll('*').forEach(node => {
+            [...node.attributes].forEach(attr => {
+              const allowedClass = attr.name === 'class' && /^(kw|kw-purple|kw-pink)$/.test(attr.value);
+              if (!['b', 'strong', 'span', 'br'].includes(node.tagName.toLowerCase()) && node.childNodes.length) {
+                node.replaceWith(...node.childNodes);
+              } else if (attr.name !== 'class' || !allowedClass) {
+                node.removeAttribute(attr.name);
+              }
+            });
+          });
+          return template.innerHTML;
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initEnhancedPrototype);
+        } else {
+          initEnhancedPrototype();
+        }
+      })();
+    </script>
+  </body>
+</html>

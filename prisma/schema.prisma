@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ShowStatus {
+  DRAFT
+  ANALYZING
+  READY_TO_REHEARSE
+  REHEARSING
+  COMPLETED
+  ARCHIVED
+}
+
+enum BitType {
+  SETUP
+  PUNCHLINE
+  TAGLINE
+  CALLBACK
+  OBSERVATIONAL
+  SELF_DEPRECATION
+}
+
+enum MaterialType {
+  BIT
+  QUOTE
+  TOPIC
+  INSPIRATION
+}
+
+enum SuggestionStatus {
+  PENDING
+  ACCEPTED
+  IGNORED
+  REGENERATED
+}
+
+model Show {
+  id                      String           @id @default(cuid())
+  title                   String
+  subtitle                String?
+  category                String           @default("STAND-UP")
+  topic                   String           @default("个人经历")
+  status                  ShowStatus       @default(DRAFT)
+  expectedDurationSeconds Int              @default(0)
+  completionRate          Int              @default(0)
+  laughDensity            Float            @default(0)
+  callbackCount           Int              @default(0)
+  peakLaughCount          Int              @default(0)
+  bits                    Bit[]
+  materials               Material[]
+  analyses                AIAnalysis[]
+  suggestions             AISuggestion[]
+  conversations           AIConversation[]
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+}
+
+model Bit {
+  id                       String   @id @default(cuid())
+  showId                   String
+  show                     Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  order                    Int
+  type                     BitType
+  title                    String
+  content                  Json
+  plainText                String
+  expectedLaughPercent     Int?
+  estimatedDurationSeconds Int      @default(0)
+  reactions                Json
+  keywords                 Json
+  annotations              Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([showId, order])
+}
+
+model Material {
+  id        String       @id @default(cuid())
+  showId    String?
+  show      Show?        @relation(fields: [showId], references: [id], onDelete: SetNull)
+  title     String
+  content   String
+  type      MaterialType
+  group     String
+  tags      String[]
+  icon      String
+  color     String
+  bitCount  Int          @default(0)
+  isMain    Boolean      @default(false)
+  isHot     Boolean      @default(false)
+  isNew     Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model AIAnalysis {
+  id                  String   @id @default(cuid())
+  showId              String
+  show                Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  averageLaughDensity Float
+  densityBars         Json
+  moodTimeline        Json
+  metrics             Json
+  wordCloud           Json
+  emotionRadar        Json
+  repeatedWords       Json
+  createdAt           DateTime @default(now())
+}
+
+model AISuggestion {
+  id          String           @id @default(cuid())
+  showId      String
+  show        Show             @relation(fields: [showId], references: [id], onDelete: Cascade)
+  bitId       String?
+  type        String
+  priority    String
+  title       String
+  description String
+  action      Json?
+  status      SuggestionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+}
+
+model AIConversation {
+  id        String      @id @default(cuid())
+  showId    String
+  show      Show        @relation(fields: [showId], references: [id], onDelete: Cascade)
+  messages  AIMessage[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model AIMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  actions        Json?
+  relatedBitIds  String[]
+  createdAt      DateTime       @default(now())
+}

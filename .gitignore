@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# production
+dist/
+build/
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# environment
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# cache
+.turbo/
+.cache/
+*.tsbuildinfo
+
+# deployment
+.vercel/
+
+# system / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# local cursor artifacts
+.cursor/plans/
