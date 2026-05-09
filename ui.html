@@ -2316,7 +2316,7 @@
                 <span style="font-size:12px;color:var(--text-muted);font-weight:600;">开场铺垫</span>
                 <div class="bit-actions">
                   <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
-                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-vertical"></i></button>
                   <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
                   <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -2350,7 +2350,7 @@
                 <span style="font-size:12px;color:var(--text-muted);font-weight:600;">核心笑点</span>
                 <div class="bit-actions">
                   <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
-                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-vertical"></i></button>
                   <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
                   <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -2396,7 +2396,7 @@
                 <span style="font-size:12px;color:var(--text-muted);font-weight:600;">生活素材</span>
                 <div class="bit-actions">
                   <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
-                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-vertical"></i></button>
                   <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
                   <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -2430,7 +2430,7 @@
                 <span style="font-size:12px;color:var(--text-muted);font-weight:600;">补充笑点</span>
                 <div class="bit-actions">
                   <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
-                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-vertical"></i></button>
                   <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
                   <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -2464,7 +2464,7 @@
                 <span style="font-size:12px;color:var(--text-muted);font-weight:600;">回扣笑点</span>
                 <div class="bit-actions">
                   <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
-                  <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                  <button class="bit-act-btn"><i class="fa-solid fa-grip-vertical"></i></button>
                   <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
                   <button class="bit-act-btn danger"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
@@ -3129,7 +3129,7 @@
       <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${t.name}</span>
       <div class="bit-actions" style="opacity:1;">
         <button class="bit-act-btn"><i class="fa-solid fa-wand-sparkles"></i></button>
-        <button class="bit-act-btn"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+        <button class="bit-act-btn"><i class="fa-solid fa-grip-vertical"></i></button>
         <button class="bit-act-btn"><i class="fa-regular fa-copy"></i></button>
         <button class="bit-act-btn danger" onclick="this.closest('.bit-block').remove();document.getElementById('bitCount').textContent=--bitCount;"><i class="fa-regular fa-trash-can"></i></button>
       </div>
@@ -3539,7 +3539,7 @@
               <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${meta.name}</span>
               <div class="bit-actions">
                 <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
-                <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-dots-vertical"></i></button>
+                <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-vertical"></i></button>
                 <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
                 <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
               </div>
@@ -4997,6 +4997,447 @@
           document.addEventListener('DOMContentLoaded', initNavigationModules);
         } else {
           initNavigationModules();
+        }
+      })();
+    </script>
+    <script>
+      (() => {
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        let deletedBitStack = [];
+
+        function initProductivityFeatures() {
+          bindMoveActions();
+          bindSearchCommand();
+          bindBulkActions();
+          bindAiReplacementActions();
+          bindJsonImportExport();
+          enhanceUserMenuForDraftJson();
+        }
+
+        function bindMoveActions() {
+          document.addEventListener('click', event => {
+            const action = event.target.closest?.('.bit-act-btn');
+            if (!action) return;
+            const actions = Array.from(action.parentElement.querySelectorAll('.bit-act-btn'));
+            const index = actions.indexOf(action);
+            if (index === 1) {
+              event.preventDefault();
+              event.stopPropagation();
+              openMoveMenu(action.closest('.bit-block'));
+            }
+            if (index === 3) {
+              const block = action.closest('.bit-block');
+              if (block) deletedBitStack.push(block.cloneNode(true));
+              setTimeout(showUndoDeleteToast, 80);
+            }
+          }, true);
+        }
+
+        function bindSearchCommand() {
+          document.addEventListener('keydown', event => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
+              event.preventDefault();
+              openSearchModal();
+            }
+          });
+        }
+
+        function bindBulkActions() {
+          const toolbar = document.querySelector('.toolbar-right');
+          if (!toolbar || toolbar.querySelector('[data-bulk-tools]')) return;
+          const button = document.createElement('button');
+          button.className = 'tool-btn';
+          button.title = '批量工具';
+          button.dataset.bulkTools = '1';
+          button.innerHTML = '<i class="fa-solid fa-sliders"></i>';
+          toolbar.appendChild(button);
+          button.addEventListener('click', openBulkToolsModal);
+        }
+
+        function bindAiReplacementActions() {
+          document.addEventListener('click', event => {
+            const aiBubble = event.target.closest?.('.chat-row:not(.me)');
+            if (!aiBubble || aiBubble.querySelector('[data-replace-current-bit]')) return;
+            const acts = aiBubble.querySelector('.chat-acts');
+            if (!acts) return;
+            const button = document.createElement('button');
+            button.className = 'ca-btn';
+            button.dataset.replaceCurrentBit = '1';
+            button.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> 替换当前段落';
+            acts.appendChild(button);
+          });
+
+          document.addEventListener('click', event => {
+            const replace = event.target.closest?.('[data-replace-current-bit]');
+            if (!replace) return;
+            const row = replace.closest('.chat-row');
+            const text = row?.querySelector('.chat-bub.ai')?.textContent.trim();
+            if (!text) return;
+            replaceActiveBit(text);
+          });
+        }
+
+        function bindJsonImportExport() {
+          document.addEventListener('keydown', event => {
+            if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'e') {
+              event.preventDefault();
+              exportJsonDraft();
+            }
+            if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'i') {
+              event.preventDefault();
+              openJsonImportModal();
+            }
+          });
+        }
+
+        function enhanceUserMenuForDraftJson() {
+          document.addEventListener('click', event => {
+            const menu = document.getElementById('userMenu');
+            if (!menu || menu.dataset.jsonEnhanced) return;
+            menu.dataset.jsonEnhanced = '1';
+            const exportBtn = document.createElement('button');
+            exportBtn.dataset.userAction = 'export-json';
+            exportBtn.style.cssText = 'width:100%;text-align:left;border:none;background:transparent;color:var(--text-soft);padding:9px 10px;border-radius:8px;cursor:pointer;font-size:12px;';
+            exportBtn.textContent = '导出 JSON 草稿';
+            const importBtn = exportBtn.cloneNode(true);
+            importBtn.dataset.userAction = 'import-json';
+            importBtn.textContent = '导入 JSON 草稿';
+            menu.appendChild(exportBtn);
+            menu.appendChild(importBtn);
+          });
+
+          document.addEventListener('click', event => {
+            const action = event.target.closest?.('[data-user-action]')?.dataset.userAction;
+            if (action === 'export-json') exportJsonDraft();
+            if (action === 'import-json') openJsonImportModal();
+          });
+        }
+
+        function openMoveMenu(block) {
+          if (!block) return;
+          removeModal('moveBitModal');
+          const index = Array.from(document.querySelectorAll('.bit-block')).indexOf(block);
+          const modal = document.createElement('div');
+          modal.id = 'moveBitModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:420px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">移动段落</div>
+              <div class="modal-sub">当前第 ${index + 1} 段，可调整在稿件中的顺序</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <button class="tb-btn btn-border" data-move-bit="top">置顶</button>
+                <button class="tb-btn btn-border" data-move-bit="up">上移</button>
+                <button class="tb-btn btn-border" data-move-bit="down">下移</button>
+                <button class="tb-btn btn-border" data-move-bit="bottom">置底</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const action = event.target.closest('[data-move-bit]')?.dataset.moveBit;
+            if (action) {
+              moveBit(block, action);
+              modal.remove();
+            }
+          });
+        }
+
+        function moveBit(block, action) {
+          const row = document.querySelector('.add-bit-row');
+          const parent = row.parentElement;
+          const blocks = Array.from(document.querySelectorAll('.bit-block'));
+          const index = blocks.indexOf(block);
+          if (action === 'top') parent.insertBefore(block, blocks[0]);
+          if (action === 'bottom') parent.insertBefore(block, row);
+          if (action === 'up' && index > 0) parent.insertBefore(block, blocks[index - 1]);
+          if (action === 'down' && index < blocks.length - 1) parent.insertBefore(blocks[index + 1], block);
+          renumberBits();
+          saveDraft();
+          showToast('段落顺序已更新');
+        }
+
+        function showUndoDeleteToast() {
+          if (!deletedBitStack.length) return;
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg-card);color:var(--text-white);padding:8px 12px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;border:1px solid var(--border-bright);box-shadow:0 8px 30px rgba(0,0,0,.45);display:flex;gap:10px;align-items:center;';
+          tip.innerHTML = '段落已删除 <button data-undo-delete="1" style="border:none;background:var(--gold);color:#1A1400;border-radius:14px;padding:4px 10px;font-size:11px;font-weight:900;cursor:pointer;">撤销</button>';
+          document.body.appendChild(tip);
+          tip.addEventListener('click', event => {
+            if (!event.target.closest('[data-undo-delete]')) return;
+            const restored = deletedBitStack.pop();
+            if (restored) {
+              document.querySelector('.add-bit-row').before(restored);
+              renumberBits();
+              saveDraft();
+            }
+            tip.remove();
+          });
+          setTimeout(() => tip.remove(), 4500);
+        }
+
+        function openSearchModal() {
+          removeModal('searchModal');
+          const modal = document.createElement('div');
+          modal.id = 'searchModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:620px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">全文搜索</div>
+              <div class="modal-sub">搜索当前稿件内容并快速定位段落</div>
+              <input id="globalSearchInput" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;color:var(--text-white);padding:10px 12px;outline:none;margin-bottom:12px;" placeholder="输入关键词，例如：游客、房租、北京">
+              <div id="globalSearchResults" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>`;
+          document.body.appendChild(modal);
+          const input = document.getElementById('globalSearchInput');
+          input.focus();
+          input.addEventListener('input', () => renderSearchResults(input.value));
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const jump = event.target.closest('[data-search-jump]')?.dataset.searchJump;
+            if (jump) {
+              jumpToBit(Number(jump));
+              modal.remove();
+            }
+          });
+        }
+
+        function renderSearchResults(query) {
+          const box = document.getElementById('globalSearchResults');
+          const q = query.trim();
+          if (!q) {
+            box.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">输入关键词开始搜索</div>';
+            return;
+          }
+          const bits = getBits();
+          const matched = bits.map((bit, index) => ({ ...bit, index })).filter(bit => bit.text.includes(q));
+          box.innerHTML = matched.length ? matched.map(bit => `
+            <button data-search-jump="${bit.index}" style="text-align:left;background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text-soft);cursor:pointer;">
+              <b style="color:var(--purple);">第 ${bit.index + 1} 段 · ${escapeHtml(bit.type)}</b>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:5px;line-height:1.5;">${escapeHtml(snippet(bit.text, q))}</div>
+            </button>`).join('') : '<div style="font-size:12px;color:var(--text-muted);">没有匹配结果</div>';
+        }
+
+        function openBulkToolsModal() {
+          removeModal('bulkToolsModal');
+          const modal = document.createElement('div');
+          modal.id = 'bulkToolsModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:520px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">批量工具</div>
+              <div class="modal-sub">快速整理当前稿件的结构、时长和评分</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="tb-btn btn-border" data-bulk="duration">重算所有段落时长</button>
+                <button class="tb-btn btn-border" data-bulk="score">重估所有预期笑声</button>
+                <button class="tb-btn btn-border" data-bulk="trim">清理空段落</button>
+                <button class="tb-btn btn-border" data-bulk="renumber">重新编号</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const action = event.target.closest('[data-bulk]')?.dataset.bulk;
+            if (action) {
+              runBulkAction(action);
+              modal.remove();
+            }
+          });
+        }
+
+        function runBulkAction(action) {
+          if (action === 'duration') {
+            document.querySelectorAll('.bit-block').forEach(block => {
+              const text = block.querySelector('.bit-text')?.innerText.trim() || '';
+              const badge = block.querySelector('.time-badge');
+              if (badge) badge.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ~${Math.max(10, Math.round(text.length / 4))}秒`;
+            });
+          }
+          if (action === 'score') {
+            document.querySelectorAll('.bit-block').forEach(block => {
+              const text = block.querySelector('.bit-text')?.innerText || '';
+              const score = estimateScore(text);
+              const val = block.querySelector('.score-val');
+              const fill = block.querySelector('.score-fill');
+              if (val) val.textContent = `${score}%`;
+              if (fill) fill.style.width = `${score}%`;
+            });
+          }
+          if (action === 'trim') {
+            document.querySelectorAll('.bit-block').forEach(block => {
+              if (!(block.querySelector('.bit-text')?.innerText.trim())) block.remove();
+            });
+          }
+          if (action === 'renumber') renumberBits();
+          renumberBits();
+          saveDraft();
+          showToast('批量整理完成');
+        }
+
+        function replaceActiveBit(text) {
+          const active = document.querySelector('.bit-content.active') || document.querySelector('.bit-content');
+          const bitText = active?.querySelector('.bit-text');
+          if (!bitText) return;
+          bitText.textContent = text.replace(/^.*?：/, '').trim() || text;
+          saveDraft();
+          showToast('已替换当前段落');
+        }
+
+        function exportJsonDraft() {
+          const data = serializeDraft();
+          downloadText(`${safeFileName(data.title)}.riffmaster.json`, JSON.stringify(data, null, 2), 'application/json');
+          showToast('已导出 JSON 草稿');
+        }
+
+        function openJsonImportModal() {
+          removeModal('jsonImportModal');
+          const modal = document.createElement('div');
+          modal.id = 'jsonImportModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:660px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">导入 JSON 草稿</div>
+              <div class="modal-sub">粘贴由 RiffMaster 导出的 .riffmaster.json 内容</div>
+              <textarea id="jsonDraftInput" rows="10" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;color:var(--text-white);padding:12px;outline:none;resize:vertical;font-family:monospace;"></textarea>
+              <button class="tb-btn btn-purple" data-import-json="1" style="margin-top:12px;width:100%;justify-content:center;">导入并恢复</button>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-import-json]')) {
+              const value = document.getElementById('jsonDraftInput').value;
+              importJsonDraft(value);
+            }
+          });
+        }
+
+        function importJsonDraft(value) {
+          try {
+            const data = JSON.parse(value);
+            if (!Array.isArray(data.bits)) throw new Error('Invalid draft');
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(data));
+            showToast('导入成功，正在刷新');
+            setTimeout(() => location.reload(), 600);
+          } catch {
+            showToast('JSON 格式不正确');
+          }
+        }
+
+        function serializeDraft() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+              type: detectType(block),
+              html: block.querySelector('.bit-text')?.innerHTML || '',
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function saveDraft() {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(serializeDraft()));
+        }
+
+        function getBits() {
+          return Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+            block,
+            type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block.querySelector('.bit-text')?.innerText.trim() || ''
+          }));
+        }
+
+        function renumberBits() {
+          document.querySelectorAll('.bit-block').forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(document.querySelectorAll('.bit-block').length);
+        }
+
+        function jumpToBit(index) {
+          const block = document.querySelectorAll('.bit-block')[index];
+          if (!block) return;
+          document.querySelectorAll('.bit-content').forEach(el => el.classList.remove('active'));
+          block.querySelector('.bit-content')?.classList.add('active');
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function detectType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (tag?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag?.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag?.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function estimateScore(text) {
+          let score = 58;
+          if (/但|结果|后来|真正|没想到|以为/.test(text)) score += 14;
+          if (/房租|游客|北京|导航|歪脖子树/.test(text)) score += 10;
+          if (text.length > 35 && text.length < 150) score += 8;
+          if (text.length > 190) score -= 12;
+          return Math.max(35, Math.min(96, score));
+        }
+
+        function snippet(text, query) {
+          const index = text.indexOf(query);
+          const start = Math.max(0, index - 28);
+          const end = Math.min(text.length, index + query.length + 44);
+          return `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`;
+        }
+
+        function downloadText(filename, content, type = 'text/plain;charset=utf-8') {
+          const blob = new Blob([content], { type });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        function safeFileName(text) {
+          return String(text || 'riffmaster').replace(/[\\/:*?"<>|]/g, '-').slice(0, 80);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initProductivityFeatures);
+        } else {
+          initProductivityFeatures();
         }
       })();
     </script>
