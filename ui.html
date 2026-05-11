@@ -1614,13 +1614,15 @@
 
       .chat-acts {
         display: flex;
+        flex-wrap: wrap;
         gap: 5px;
         margin-top: 6px;
+        max-width: 238px;
       }
 
       .ca-btn {
         font-size: 10px;
-        padding: 3px 8px;
+        padding: 5px 8px;
         border-radius: 5px;
         border: 1px solid var(--border);
         background: transparent;
@@ -1630,7 +1632,11 @@
         font-family: inherit;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 3px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+        line-height: 1;
       }
 
       .ca-btn:hover {
@@ -7423,9 +7429,12 @@
     </script>
     <script>
       (() => {
+        const AI_HISTORY_KEY = 'riffmaster.ai.generations.v1';
+
         function initFullAIWorkflow() {
           overrideChatActions();
           bindCapturedAIButtons();
+          addAIHistoryButton();
           window.riffAiAction = runAIAction;
         }
 
@@ -7521,11 +7530,13 @@
               insertText: result.insertText,
               insertHtml: result.insertHtml
             };
+            normalized.generationId = recordGeneration(action, prompt, normalized, result.source || 'openai');
             appendChatMessage('ai', result.message || fallbackMessage(action), normalized);
             if (result.source === 'openai') showToast('AI 已生成');
             else showToast('AI 已使用本地降级建议');
           } catch {
             const fallback = localFallback(action, prompt, options);
+            fallback.generationId = recordGeneration(action, prompt, fallback, 'local');
             appendChatMessage('ai', fallback.message, fallback);
             showToast('AI 请求失败，已使用本地建议');
           } finally {
@@ -7545,19 +7556,14 @@
           } else {
             const canInsert = action.insertText || action.insertHtml;
             const actions = canInsert
-              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert="1"><i class="fa-solid fa-check"></i> 插入为新段落</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来一版</button></div>`
+              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert-after="1"><i class="fa-solid fa-check"></i> 当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
               : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
             row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actions}</div>`;
-            row.querySelector('[data-real-ai-insert]')?.addEventListener('click', () => {
-              window.addBit?.({
-                type: action.type || 'OBSERVATIONAL',
-                html: action.insertHtml || escapeHtml(action.insertText),
-                duration: estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))
-              });
-              showToast('已插入 AI 段落');
-            });
+            row.querySelector('[data-real-ai-insert-after]')?.addEventListener('click', () => insertGeneratedBit(action, 'after'));
+            row.querySelector('[data-real-ai-insert-end]')?.addEventListener('click', () => insertGeneratedBit(action, 'end'));
             row.querySelector('[data-real-ai-copy]')?.addEventListener('click', () => {
               navigator.clipboard?.writeText(action.insertText || stripHtml(action.insertHtml || text));
+              markGeneration(action.generationId, 'copied');
               showToast('已复制 AI 内容');
             });
             row.querySelector('[data-real-ai-retry]')?.addEventListener('click', () => {
@@ -7568,6 +7574,157 @@
             });
           }
           list.insertBefore(row, typing);
+        }
+
+        function addAIHistoryButton() {
+          const head = document.querySelector('.rp-head');
+          if (!head || head.querySelector('[data-ai-history-entry]')) return;
+          const button = document.createElement('button');
+          button.dataset.aiHistoryEntry = '1';
+          button.style.cssText = 'border:1px solid rgba(245,200,66,.35);background:rgba(245,200,66,.1);color:var(--gold);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;';
+          button.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> AI 历史';
+          button.addEventListener('click', openAIHistoryModal);
+          head.appendChild(button);
+        }
+
+        function openAIHistoryModal() {
+          removeModal('aiGenerationHistoryModal');
+          const items = readHistory();
+          const modal = document.createElement('div');
+          modal.id = 'aiGenerationHistoryModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:860px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">AI 生成历史</div>
+              <div class="modal-sub">最近 ${items.length} 条 · 可插入、复制或基于历史重新生成</div>
+              <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button class="tb-btn btn-border" data-clear-ai-history="1"><i class="fa-regular fa-trash-can"></i> 清空历史</button>
+                <button class="tb-btn btn-purple" data-run-ai-history-callback="1"><i class="fa-solid fa-wand-sparkles"></i> 新生成 Callback</button>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:9px;">
+                ${items.map(item => historyCard(item)).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:20px;text-align:center;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;">暂无 AI 生成记录</div>'}
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-clear-ai-history]')) {
+              localStorage.removeItem(AI_HISTORY_KEY);
+              modal.remove();
+              openAIHistoryModal();
+              showToast('AI 历史已清空');
+            }
+            if (event.target.closest('[data-run-ai-history-callback]')) {
+              modal.remove();
+              window.doSuggest?.();
+            }
+            const id = event.target.closest('[data-ai-history-action]')?.dataset.aiHistoryId;
+            const actionName = event.target.closest('[data-ai-history-action]')?.dataset.aiHistoryAction;
+            if (!id || !actionName) return;
+            const record = readHistory().find(item => item.id === id);
+            if (!record) return;
+            if (actionName === 'insert-after') insertGeneratedBit(record, 'after');
+            if (actionName === 'insert-end') insertGeneratedBit(record, 'end');
+            if (actionName === 'copy') {
+              navigator.clipboard?.writeText(record.insertText || stripHtml(record.insertHtml || record.message));
+              markGeneration(id, 'copied');
+              showToast('已复制历史内容');
+            }
+            if (actionName === 'retry') {
+              modal.remove();
+              runAIAction(record.action || 'rewrite', `请基于这条历史生成另一版：${record.insertText || record.message}`, {
+                selectedText: record.insertText || record.message,
+                preferredType: record.type
+              });
+            }
+          });
+        }
+
+        function historyCard(item) {
+          const sourceColor = item.source === 'openai' ? 'var(--teal)' : 'var(--orange)';
+          const content = item.insertText || stripHtml(item.insertHtml || item.message);
+          return `
+            <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+                <b style="font-size:12px;color:var(--purple);">${escapeHtml(actionLabel(item.action))}</b>
+                <span style="font-size:10px;color:${sourceColor};font-weight:900;">${escapeHtml(item.source || 'local')}</span>
+                <span style="font-size:10px;color:var(--text-faint);margin-left:auto;">${new Date(item.createdAt).toLocaleString()}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text-soft);line-height:1.65;margin-bottom:8px;">${escapeHtml(content).slice(0, 260)}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="ca-btn ok" data-ai-history-action="insert-after" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-check"></i> 插入当前后</button>
+                <button class="ca-btn" data-ai-history-action="insert-end" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-plus"></i> 插入末尾</button>
+                <button class="ca-btn" data-ai-history-action="copy" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-regular fa-copy"></i> 复制</button>
+                <button class="ca-btn" data-ai-history-action="retry" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-rotate"></i> 再生成</button>
+                <span style="font-size:10px;color:var(--text-faint);align-self:center;margin-left:auto;">${escapeHtml(item.status || 'generated')}</span>
+              </div>
+            </div>`;
+        }
+
+        function insertGeneratedBit(action, mode) {
+          const html = action.insertHtml || escapeHtml(action.insertText || '');
+          if (!html) return;
+          const before = Array.from(document.querySelectorAll('.bit-block'));
+          window.addBit?.({
+            type: action.type || 'OBSERVATIONAL',
+            html,
+            duration: estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))
+          });
+          const after = Array.from(document.querySelectorAll('.bit-block'));
+          const created = after.find(block => !before.includes(block)) || after[after.length - 1];
+          if (mode === 'after' && created) {
+            const target = document.querySelector('.bit-content.active')?.closest('.bit-block') || before[before.length - 1];
+            if (target && target !== created) target.after(created);
+            renumberBits();
+          }
+          markGeneration(action.generationId || action.id, mode === 'after' ? 'inserted-after' : 'inserted-end');
+          showToast(mode === 'after' ? '已插入当前段后' : '已插入末尾');
+        }
+
+        function recordGeneration(action, prompt, result, source) {
+          const id = `ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          const item = {
+            id,
+            action,
+            prompt,
+            source,
+            status: 'generated',
+            type: result.type,
+            title: result.title,
+            message: result.message || '',
+            insertText: result.insertText,
+            insertHtml: result.insertHtml,
+            createdAt: new Date().toISOString()
+          };
+          const next = [item, ...readHistory()].slice(0, 40);
+          localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(next));
+          return id;
+        }
+
+        function markGeneration(id, status) {
+          if (!id) return;
+          const next = readHistory().map(item => item.id === id ? { ...item, status, updatedAt: new Date().toISOString() } : item);
+          localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(next));
+        }
+
+        function readHistory() {
+          try {
+            return JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]');
+          } catch {
+            return [];
+          }
+        }
+
+        function actionLabel(action) {
+          return {
+            chat: 'AI 对话',
+            expand: 'AI 展开',
+            callback: 'Callback',
+            optimize: '段落优化',
+            repair: '修复方案',
+            rewrite: '改写'
+          }[action] || 'AI 生成';
         }
 
         function collectShow() {
@@ -7658,6 +7815,17 @@
 
         function estimateDurationLabel(text) {
           return `~${Math.max(8, Math.round(String(text || '').length / 4))}秒`;
+        }
+
+        function renumberBits() {
+          document.querySelectorAll('.bit-block').forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
         }
 
         function showToast(text) {
