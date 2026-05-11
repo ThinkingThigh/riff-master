@@ -3894,8 +3894,8 @@
           };
         }
 
-        function openVersionModal() {
-          saveVersion('打开历史前自动保存');
+        function openVersionModal(options = {}) {
+          if (!options.skipAutoSave) saveVersion('打开历史前自动保存');
           const versions = readVersions();
           const existing = document.getElementById('versionModal');
           if (existing) existing.remove();
@@ -3911,9 +3911,10 @@
               <div style="display:flex;gap:8px;margin-bottom:14px;">
                 <button class="tb-btn btn-purple" data-save-version="1"><i class="fa-solid fa-floppy-disk"></i> 保存当前版本</button>
                 <button class="tb-btn btn-border" data-export-current="1"><i class="fa-solid fa-download"></i> 导出当前稿件</button>
+                <button class="tb-btn btn-border" data-clear-versions="1" style="margin-left:auto;color:var(--red);border-color:rgba(255,77,109,.35);"><i class="fa-regular fa-trash-can"></i> 清空历史版本</button>
               </div>
               <div style="display:flex;flex-direction:column;gap:8px;">
-                ${versions.map(version => `
+                ${versions.length ? versions.map(version => `
                   <div class="soft-card" style="padding:12px;border-radius:10px;background:var(--bg-raised);border:1px solid var(--border);">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <div style="flex:1;min-width:0;">
@@ -3924,7 +3925,7 @@
                       <button class="ca-btn" data-export-version="${version.id}"><i class="fa-solid fa-download"></i> 导出</button>
                     </div>
                   </div>
-                `).join('')}
+                `).join('') : '<div style="background:var(--bg-raised);border:1px dashed var(--border-bright);border-radius:12px;padding:22px;text-align:center;color:var(--text-muted);font-size:12px;">暂无历史版本。点击“保存当前版本”后会出现在这里。</div>'}
               </div>
             </div>`;
           document.body.appendChild(modal);
@@ -3934,9 +3935,20 @@
             if (event.target.closest('[data-save-version]')) {
               saveVersion('手动保存');
               modal.remove();
-              openVersionModal();
+              openVersionModal({ skipAutoSave: true });
             }
             if (event.target.closest('[data-export-current]')) exportMarkdown();
+            if (event.target.closest('[data-clear-versions]')) {
+              if (!readVersions().length) {
+                showToast('暂无历史版本可清空');
+                return;
+              }
+              if (!confirm('确认清空所有历史版本？当前稿件不会被删除。')) return;
+              localStorage.setItem(VERSION_KEY, '[]');
+              showToast('历史版本已清空');
+              modal.remove();
+              openVersionModal({ skipAutoSave: true });
+            }
             const restore = event.target.closest('[data-restore-version]');
             if (restore) restoreVersion(restore.dataset.restoreVersion);
             const exportBtn = event.target.closest('[data-export-version]');
@@ -6093,8 +6105,8 @@
           {
             id: 'blank',
             title: '空白节目',
-            desc: '从 1 个空白 Setup 开始',
-            bits: [{ type: 'SETUP', html: '', score: '—', duration: '—', reactions: { laugh: 0, smile: 0, flat: 0 } }]
+            desc: '从 0 段空白稿开始',
+            bits: []
           }
         ];
 
@@ -6117,15 +6129,8 @@
         function ensureInitialShow() {
           const shows = readShows();
           if (shows.length) return;
-          const draft = readCurrentDraft();
-          const show = {
-            id: `show-${Date.now()}`,
-            title: draft.title || document.querySelector('.show-title-input')?.value || '未命名节目',
-            topic: '个人经历',
-            status: '草稿进行中',
-            updatedAt: new Date().toISOString(),
-            draft
-          };
+          const draft = normalizeDraft(readCurrentDraft());
+          const show = createManagedShow(draft.title || '未命名节目', draft);
           writeShows([show]);
           localStorage.setItem(ACTIVE_SHOW_KEY, show.id);
         }
@@ -6207,7 +6212,7 @@
             updatedAt: new Date().toISOString(),
             draft: {
               title: template.title === '空白节目' ? '未命名节目' : template.title,
-              bits: template.bits
+              bits: JSON.parse(JSON.stringify(template.bits || []))
             }
           };
           const shows = [show, ...readShows()];
@@ -6234,16 +6239,14 @@
 
         function deleteShow(showId) {
           const shows = readShows();
-          if (shows.length <= 1) {
-            showToast('至少保留一个节目');
-            return;
-          }
           if (!confirm('确认删除这个节目？')) return;
-          const next = shows.filter(show => show.id !== showId);
+          let next = shows.filter(show => show.id !== showId);
+          if (!next.length) next = [createManagedShow('未命名节目', { title: '未命名节目', bits: [] })];
           writeShows(next);
           if (localStorage.getItem(ACTIVE_SHOW_KEY) === showId) {
             localStorage.setItem(ACTIVE_SHOW_KEY, next[0].id);
             localStorage.setItem(DRAFT_KEY, JSON.stringify(next[0].draft));
+            persistPrototypeDraft(next[0].draft);
             location.reload();
           } else {
             showToast('节目已删除');
@@ -6257,6 +6260,7 @@
           persistCurrentShow();
           localStorage.setItem(ACTIVE_SHOW_KEY, show.id);
           localStorage.setItem(DRAFT_KEY, JSON.stringify(show.draft));
+          persistPrototypeDraft(show.draft);
           sessionStorage.setItem(SWITCHING_SHOW_KEY, show.id);
           showToast('正在打开节目');
           location.reload();
@@ -6280,7 +6284,7 @@
           if (sessionStorage.getItem(SWITCHING_SHOW_KEY)) return;
           const activeId = localStorage.getItem(ACTIVE_SHOW_KEY);
           if (!activeId) return;
-          const draft = serializeCurrentDraft();
+          const draft = normalizeDraft(serializeCurrentDraft());
           const shows = readShows();
           const next = shows.map(show => show.id === activeId ? {
             ...show,
@@ -6290,6 +6294,7 @@
           } : show);
           writeShows(next);
           localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+          persistPrototypeDraft(draft);
         }
 
         function hydrateSwitchTargetIfNeeded() {
@@ -6308,6 +6313,7 @@
         }
 
         function applyDraftToDom(draft) {
+          draft = normalizeDraft(draft);
           const title = document.querySelector('.show-title-input');
           if (title) title.value = draft.title || '未命名节目';
           const addRow = document.querySelector('.add-bit-row');
@@ -6318,7 +6324,7 @@
           const count = document.getElementById('bitCount');
           if (count) count.textContent = String(draft.bits.length);
           document.querySelectorAll('.statusbar .sb:first-child').forEach(el => {
-            el.innerHTML = `<i class="fa-solid fa-microphone-lines"></i> ${escapeHtml((draft.title || '未命名节目').split('：')[0])} · 个人脱口秀`;
+            el.innerHTML = `<i class="fa-solid fa-microphone-lines"></i> ${escapeHtml(draft.title || '未命名节目')}`;
           });
         }
 
@@ -6399,6 +6405,41 @@
               }
             }))
           };
+        }
+
+        function normalizeDraft(draft = {}) {
+          const title = draft.title || '未命名节目';
+          const bits = Array.isArray(draft.bits) ? draft.bits.filter(bit => !isEmptyManagedBit(bit)) : [];
+          return { title, bits };
+        }
+
+        function isEmptyManagedBit(bit) {
+          const text = String(bit?.html || '').replace(/<[^>]+>/g, '').trim();
+          const score = String(bit?.score || '—').trim();
+          const duration = String(bit?.duration || '—').replace(/\s/g, '');
+          const reactions = bit?.reactions || {};
+          return !text && (!score || score === '—') && (!duration || duration === '—') &&
+            !Number(reactions.laugh || 0) && !Number(reactions.smile || 0) && !Number(reactions.flat || 0);
+        }
+
+        function createManagedShow(title, draft) {
+          const normalized = normalizeDraft({ title, ...(draft || {}) });
+          return {
+            id: `show-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            title: normalized.title || '未命名节目',
+            topic: 'custom',
+            status: '草稿进行中',
+            updatedAt: new Date().toISOString(),
+            draft: normalized
+          };
+        }
+
+        function persistPrototypeDraft(draft) {
+          fetch('/api/shows/prototype', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(normalizeDraft(draft))
+          }).catch(() => {});
         }
 
         function readCurrentDraft() {
@@ -8176,12 +8217,25 @@
         }
 
         async function loadRealPrototypeShow() {
+          const managedShow = readActiveManagedShow();
+          const hasStoredDraft = localStorage.getItem(DRAFT_KEY) !== null;
+          const managedHasContent = Boolean(managedShow?.draft?.bits?.length);
+          if (managedShow?.draft && (managedHasContent || hasStoredDraft)) {
+            const show = normalizeRealShow(managedShow.draft);
+            applyRealShow(show);
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(show));
+            localStorage.setItem(REAL_BOOT_KEY, '1');
+            await persistRealShow(show);
+            return;
+          }
+
           try {
             const response = await fetch('/api/shows/prototype', { cache: 'no-store' });
             const data = await response.json();
             if (data.show && Array.isArray(data.show.bits) && data.show.bits.length) {
-              applyRealShow(data.show);
-              localStorage.setItem(DRAFT_KEY, JSON.stringify(data.show));
+              const show = normalizeRealShow(data.show);
+              applyRealShow(show);
+              localStorage.setItem(DRAFT_KEY, JSON.stringify(show));
               localStorage.setItem(REAL_BOOT_KEY, '1');
               return;
             }
@@ -8189,6 +8243,30 @@
 
           applyEmptyShow();
           localStorage.setItem(REAL_BOOT_KEY, '1');
+        }
+
+        function readActiveManagedShow() {
+          try {
+            const shows = JSON.parse(localStorage.getItem('riffmaster.prototype.shows.v1') || '[]');
+            const activeId = localStorage.getItem('riffmaster.prototype.activeShowId.v1');
+            return Array.isArray(shows) ? shows.find(show => show.id === activeId) : null;
+          } catch {
+            return null;
+          }
+        }
+
+        function normalizeRealShow(show = {}) {
+          return {
+            title: show.title || '未命名节目',
+            bits: Array.isArray(show.bits) ? show.bits.filter(bit => {
+              const text = String(bit?.html || '').replace(/<[^>]+>/g, '').trim();
+              const score = String(bit?.score || '—').trim();
+              const duration = String(bit?.duration || '—').replace(/\s/g, '');
+              const reactions = bit?.reactions || {};
+              return text || (score && score !== '—') || (duration && duration !== '—') ||
+                Number(reactions.laugh || 0) || Number(reactions.smile || 0) || Number(reactions.flat || 0);
+            }) : []
+          };
         }
 
         function addZeroCreateButton() {
@@ -8472,12 +8550,46 @@
 
         async function persistRealShow(show) {
           localStorage.setItem(DRAFT_KEY, JSON.stringify(show));
+          writeActiveManagedShow(show);
           try {
             await fetch('/api/shows/prototype', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(show)
             });
+          } catch {}
+        }
+
+        function writeActiveManagedShow(show) {
+          try {
+            const key = 'riffmaster.prototype.shows.v1';
+            const activeKey = 'riffmaster.prototype.activeShowId.v1';
+            const shows = JSON.parse(localStorage.getItem(key) || '[]');
+            let activeId = localStorage.getItem(activeKey);
+            const normalized = normalizeRealShow(show);
+            if (!Array.isArray(shows)) return;
+
+            if (!activeId || !shows.some(item => item.id === activeId)) {
+              activeId = `show-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+              shows.unshift({
+                id: activeId,
+                title: normalized.title,
+                topic: 'custom',
+                status: '草稿进行中',
+                updatedAt: new Date().toISOString(),
+                draft: normalized
+              });
+              localStorage.setItem(activeKey, activeId);
+            } else {
+              const index = shows.findIndex(item => item.id === activeId);
+              shows[index] = {
+                ...shows[index],
+                title: normalized.title,
+                updatedAt: new Date().toISOString(),
+                draft: normalized
+              };
+            }
+            localStorage.setItem(key, JSON.stringify(shows));
           } catch {}
         }
 
