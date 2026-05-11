@@ -5775,5 +5775,842 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        const VERSION_KEY = 'riffmaster.prototype.versions.v1';
+        const COMMENTS_KEY = 'riffmaster.prototype.comments.v1';
+        const NOTIFICATION_KEY = 'riffmaster.notifications.v1';
+        const REHEARSAL_KEY = 'riffmaster.prototype.rehearsals.v1';
+        const SETTINGS_KEY = 'riffmaster.prototype.settings.v1';
+        let syncTimer = null;
+
+        function initDataAndVersionFeatures() {
+          bindVersionCompareEnhancement();
+          bindApiAutosaveSync();
+          bindDataManagerEntry();
+          patchUserMenuForDataManager();
+          updateSyncIndicator('本地已就绪');
+        }
+
+        function bindVersionCompareEnhancement() {
+          document.addEventListener('click', event => {
+            const modal = document.getElementById('versionModal');
+            if (!modal || modal.dataset.compareEnhanced) return;
+            modal.dataset.compareEnhanced = '1';
+            enhanceVersionModal(modal);
+          });
+        }
+
+        function enhanceVersionModal(modal) {
+          modal.querySelectorAll('[data-restore-version]').forEach(button => {
+            const id = button.dataset.restoreVersion;
+            if (!button.parentElement.querySelector(`[data-compare-version="${id}"]`)) {
+              const compare = document.createElement('button');
+              compare.className = 'ca-btn';
+              compare.dataset.compareVersion = id;
+              compare.innerHTML = '<i class="fa-solid fa-code-compare"></i> 对比';
+              button.after(compare);
+            }
+          });
+
+          modal.addEventListener('click', event => {
+            const id = event.target.closest('[data-compare-version]')?.dataset.compareVersion;
+            if (id) openVersionCompareModal(id);
+          });
+        }
+
+        function openVersionCompareModal(versionId) {
+          const version = readVersions().find(item => item.id === versionId);
+          if (!version) return;
+          removeModal('versionCompareModal');
+          const current = serializeCurrentDraft();
+          const oldDraft = safeParse(version.draft) || {};
+          const diff = compareDrafts(oldDraft, current);
+          const modal = document.createElement('div');
+          modal.id = 'versionCompareModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:900px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">版本差异对比</div>
+              <div class="modal-sub">对比版本：${escapeHtml(version.label)} · ${new Date(version.createdAt).toLocaleString()}</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                ${metricCard('标题变化', diff.titleChanged ? '1' : '0', diff.titleChanged ? 'orange' : 'teal')}
+                ${metricCard('新增段落', diff.added.length, 'teal')}
+                ${metricCard('删除段落', diff.removed.length, 'red')}
+                ${metricCard('修改段落', diff.changed.length, 'gold')}
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;">
+                  <div style="font-size:12px;font-weight:900;color:var(--text-muted);margin-bottom:10px;">历史版本</div>
+                  ${renderVersionBits(oldDraft.bits || [], diff, 'old')}
+                </div>
+                <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;">
+                  <div style="font-size:12px;font-weight:900;color:var(--purple);margin-bottom:10px;">当前版本</div>
+                  ${renderVersionBits(current.bits || [], diff, 'current')}
+                </div>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+          });
+        }
+
+        function bindApiAutosaveSync() {
+          document.addEventListener('input', scheduleApiSync);
+          document.addEventListener('click', event => {
+            if (event.target.closest('.bit-act-btn, .reaction-btn, .add-bit-btn, [data-insert-ai], [data-import-json]')) {
+              scheduleApiSync();
+            }
+          });
+          window.addEventListener('beforeunload', () => {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(serializeCurrentDraft()));
+          });
+        }
+
+        function scheduleApiSync() {
+          clearTimeout(syncTimer);
+          updateSyncIndicator('等待同步');
+          syncTimer = setTimeout(syncToApi, 900);
+        }
+
+        async function syncToApi() {
+          const draft = serializeCurrentDraft();
+          try {
+            const response = await fetch('/api/shows/prototype/save', {
+              method: 'PUT',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify(toApiPayload(draft))
+            });
+            if (!response.ok) throw new Error('sync failed');
+            updateSyncIndicator('已同步 API');
+          } catch (error) {
+            updateSyncIndicator('API 同步失败');
+          }
+        }
+
+        function bindDataManagerEntry() {
+          const settingsButton = document.querySelector('.rail-btn[title="设置"]');
+          if (!settingsButton || settingsButton.dataset.dataManagerBound) return;
+          settingsButton.dataset.dataManagerBound = '1';
+          settingsButton.addEventListener('dblclick', openDataManagerModal);
+        }
+
+        function patchUserMenuForDataManager() {
+          document.addEventListener('click', () => {
+            const menu = document.getElementById('userMenu');
+            if (!menu || menu.dataset.dataManagerEnhanced) return;
+            menu.dataset.dataManagerEnhanced = '1';
+            const button = document.createElement('button');
+            button.dataset.userAction = 'data-manager';
+            button.style.cssText = 'width:100%;text-align:left;border:none;background:transparent;color:var(--text-soft);padding:9px 10px;border-radius:8px;cursor:pointer;font-size:12px;';
+            button.textContent = '数据管理';
+            menu.appendChild(button);
+          });
+
+          document.addEventListener('click', event => {
+            const action = event.target.closest?.('[data-user-action]')?.dataset.userAction;
+            if (action === 'data-manager') openDataManagerModal();
+          });
+        }
+
+        function openDataManagerModal() {
+          removeModal('dataManagerModal');
+          const stats = getStorageStats();
+          const modal = document.createElement('div');
+          modal.id = 'dataManagerModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:720px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">数据管理</div>
+              <div class="modal-sub">查看本地 MVP 数据占用，支持完整备份和选择性清理</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+                ${metricCard('总占用', `${stats.totalKb}KB`, 'purple')}
+                ${metricCard('历史版本', stats.versionCount, 'gold')}
+                ${metricCard('排练记录', stats.rehearsalCount, 'teal')}
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+                ${stats.items.map(item => `
+                  <label style="display:flex;align-items:center;gap:10px;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text-soft);font-size:12px;">
+                    <input type="checkbox" data-clear-key="${item.key}">
+                    <span style="flex:1;">${escapeHtml(item.label)}</span>
+                    <b style="color:var(--text-muted);">${item.kb}KB</b>
+                  </label>
+                `).join('')}
+              </div>
+              <div style="display:flex;gap:8px;">
+                <button class="tb-btn btn-purple" data-backup-all="1"><i class="fa-solid fa-download"></i> 备份全部数据</button>
+                <button class="tb-btn btn-border" data-clear-selected="1"><i class="fa-regular fa-trash-can"></i> 清理选中数据</button>
+                <button class="tb-btn btn-border" data-copy-summary="1"><i class="fa-regular fa-copy"></i> 复制摘要</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-backup-all]')) backupAllData();
+            if (event.target.closest('[data-clear-selected]')) clearSelectedData(modal);
+            if (event.target.closest('[data-copy-summary]')) copyDataSummary();
+          });
+        }
+
+        function serializeCurrentDraft() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            savedAt: new Date().toISOString(),
+            bits: Array.from(document.querySelectorAll('.bit-block')).map((block, index) => ({
+              id: block.dataset.bitUid || `bit-${index + 1}`,
+              type: detectType(block),
+              html: block.querySelector('.bit-text')?.innerHTML || '',
+              plainText: block.querySelector('.bit-text')?.innerText.trim() || '',
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function readVersions() {
+          try {
+            return JSON.parse(localStorage.getItem(VERSION_KEY) || '[]');
+          } catch {
+            return [];
+          }
+        }
+
+        function compareDrafts(oldDraft, currentDraft) {
+          const oldBits = oldDraft.bits || [];
+          const currentBits = currentDraft.bits || [];
+          const max = Math.max(oldBits.length, currentBits.length);
+          const added = [];
+          const removed = [];
+          const changed = [];
+          for (let i = 0; i < max; i++) {
+            if (!oldBits[i] && currentBits[i]) added.push(i);
+            else if (oldBits[i] && !currentBits[i]) removed.push(i);
+            else if ((oldBits[i]?.plainText || stripHtml(oldBits[i]?.html || '')) !== (currentBits[i]?.plainText || stripHtml(currentBits[i]?.html || ''))) changed.push(i);
+          }
+          return {
+            titleChanged: (oldDraft.title || '') !== (currentDraft.title || ''),
+            added,
+            removed,
+            changed
+          };
+        }
+
+        function renderVersionBits(bits, diff, side) {
+          if (!bits.length) return '<div style="font-size:12px;color:var(--text-muted);">暂无段落</div>';
+          return bits.map((bit, index) => {
+            const changed = diff.changed.includes(index);
+            const added = side === 'current' && diff.added.includes(index);
+            const removed = side === 'old' && diff.removed.includes(index);
+            const color = added ? 'var(--teal)' : removed ? 'var(--red)' : changed ? 'var(--gold)' : 'var(--text-muted)';
+            const label = added ? '新增' : removed ? '删除' : changed ? '修改' : '未变';
+            const text = bit.plainText || stripHtml(bit.html || '');
+            return `
+              <div style="border:1px solid var(--border);background:var(--bg-card);border-radius:10px;padding:10px;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                  <b style="font-size:12px;color:var(--purple);">第 ${index + 1} 段</b>
+                  <span style="font-size:10px;color:${color};font-weight:900;">${label}</span>
+                </div>
+                <div style="font-size:11px;line-height:1.6;color:var(--text-muted);">${escapeHtml(text.slice(0, 180))}${text.length > 180 ? '…' : ''}</div>
+              </div>`;
+          }).join('');
+        }
+
+        function toApiPayload(draft) {
+          return {
+            title: draft.title || '未命名节目',
+            completionRate: calculateCompletion(draft.bits),
+            bits: draft.bits.map((bit, index) => ({
+              id: bit.id || `bit-${index + 1}`,
+              order: index + 1,
+              type: normalizeType(bit.type),
+              title: typeTitle(bit.type),
+              html: bit.html || '',
+              plainText: bit.plainText || stripHtml(bit.html || ''),
+              expectedLaughPercent: parseScore(bit.score),
+              estimatedDurationSeconds: parseDuration(bit.duration),
+              reactions: bit.reactions || { laugh: 0, smile: 0, flat: 0 },
+              keywords: []
+            }))
+          };
+        }
+
+        function getStorageStats() {
+          const items = [
+            { key: DRAFT_KEY, label: '当前草稿' },
+            { key: VERSION_KEY, label: '历史版本' },
+            { key: COMMENTS_KEY, label: '段落评论' },
+            { key: NOTIFICATION_KEY, label: '通知中心' },
+            { key: REHEARSAL_KEY, label: '排练记录' },
+            { key: SETTINGS_KEY, label: '项目设置' }
+          ].map(item => {
+            const value = localStorage.getItem(item.key) || '';
+            return { ...item, bytes: value.length, kb: Math.max(0, Math.round(value.length / 1024)) };
+          });
+          return {
+            items,
+            totalKb: Math.round(items.reduce((sum, item) => sum + item.bytes, 0) / 1024),
+            versionCount: safeParse(localStorage.getItem(VERSION_KEY))?.length || 0,
+            rehearsalCount: safeParse(localStorage.getItem(REHEARSAL_KEY))?.length || 0
+          };
+        }
+
+        function backupAllData() {
+          const payload = {
+            exportedAt: new Date().toISOString(),
+            draft: safeParse(localStorage.getItem(DRAFT_KEY)),
+            versions: safeParse(localStorage.getItem(VERSION_KEY)) || [],
+            comments: safeParse(localStorage.getItem(COMMENTS_KEY)) || {},
+            notifications: safeParse(localStorage.getItem(NOTIFICATION_KEY)) || [],
+            rehearsals: safeParse(localStorage.getItem(REHEARSAL_KEY)) || [],
+            settings: safeParse(localStorage.getItem(SETTINGS_KEY)) || {}
+          };
+          downloadText(`riffmaster-backup-${Date.now()}.json`, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8');
+          showToast('已备份全部数据');
+        }
+
+        function clearSelectedData(modal) {
+          const keys = Array.from(modal.querySelectorAll('[data-clear-key]:checked')).map(item => item.dataset.clearKey);
+          if (!keys.length) {
+            showToast('请先选择要清理的数据');
+            return;
+          }
+          if (!confirm(`确认清理 ${keys.length} 项本地数据？`)) return;
+          keys.forEach(key => localStorage.removeItem(key));
+          showToast('已清理选中数据');
+          modal.remove();
+        }
+
+        function copyDataSummary() {
+          const stats = getStorageStats();
+          const summary = `RiffMaster 数据摘要\n总占用：${stats.totalKb}KB\n历史版本：${stats.versionCount}\n排练记录：${stats.rehearsalCount}`;
+          navigator.clipboard?.writeText(summary);
+          showToast('已复制数据摘要');
+        }
+
+        function updateSyncIndicator(text) {
+          let indicator = document.getElementById('apiSyncIndicator');
+          if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'apiSyncIndicator';
+            indicator.className = 'sb';
+            indicator.style.borderRight = 'none';
+            document.querySelector('.sb-r')?.appendChild(indicator);
+          }
+          indicator.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> ${escapeHtml(text)}`;
+        }
+
+        function metricCard(label, value, color) {
+          return `<div class="m-card"><div class="m-val" style="color:var(--${color});">${value}</div><div class="m-label">${label}</div></div>`;
+        }
+
+        function normalizeType(type) {
+          if (/PUNCHLINE|核心/.test(type)) return 'PUNCHLINE';
+          if (/TAGLINE|补充/.test(type)) return 'TAGLINE';
+          if (/CALLBACK|回扣/.test(type)) return 'CALLBACK';
+          if (/观察/.test(type)) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function typeTitle(type) {
+          return {
+            SETUP: '开场铺垫',
+            PUNCHLINE: '核心笑点',
+            TAGLINE: '补充笑点',
+            CALLBACK: '回扣笑点',
+            OBSERVATIONAL: '生活素材'
+          }[normalizeType(type)] || '段落';
+        }
+
+        function calculateCompletion(bits) {
+          if (!bits.length) return 0;
+          return Math.min(100, Math.round(bits.filter(bit => (bit.plainText || stripHtml(bit.html || '')).length > 10).length / bits.length * 80 + 12));
+        }
+
+        function parseScore(score) {
+          const value = Number(String(score || '').replace('%', ''));
+          return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
+        }
+
+        function parseDuration(label) {
+          const value = Number(String(label || '').match(/\d+/)?.[0] || 0);
+          return value;
+        }
+
+        function detectType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (tag?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag?.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag?.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function stripHtml(html) {
+          const div = document.createElement('div');
+          div.innerHTML = html || '';
+          return div.textContent || '';
+        }
+
+        function safeParse(value) {
+          try {
+            return JSON.parse(value || 'null');
+          } catch {
+            return null;
+          }
+        }
+
+        function downloadText(filename, content, type = 'text/plain;charset=utf-8') {
+          const blob = new Blob([content], { type });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initDataAndVersionFeatures);
+        } else {
+          initDataAndVersionFeatures();
+        }
+      })();
+    </script>
+    <script>
+      (() => {
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        const SHOWS_KEY = 'riffmaster.prototype.shows.v1';
+        const ACTIVE_SHOW_KEY = 'riffmaster.prototype.activeShowId.v1';
+        const SWITCHING_SHOW_KEY = 'riffmaster.prototype.switchingShowId.v1';
+
+        const templates = [
+          {
+            id: 'blank',
+            title: '空白节目',
+            desc: '从 1 个空白 Setup 开始',
+            bits: [{ type: 'SETUP', html: '', score: '—', duration: '—', reactions: { laugh: 0, smile: 0, flat: 0 } }]
+          },
+          {
+            id: 'city',
+            title: '城市生活观察',
+            desc: '适合北漂、租房、通勤主题',
+            bits: [
+              { type: 'SETUP', html: '我发现一个人在大城市待久了，最先变化的不是梦想，是对通勤时间的计量单位。', score: '72%', duration: '~32秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
+              { type: 'PUNCHLINE', html: '以前我说“很远”是十公里，现在我说“很远”是地铁换乘要走出站。', score: '84%', duration: '~28秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
+              { type: 'CALLBACK', html: '所以我不是离不开这座城市，我只是还没找到一个不用换乘的人生出口。', score: '80%', duration: '~30秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
+            ]
+          },
+          {
+            id: 'workplace',
+            title: '职场黑话大赏',
+            desc: '适合会议、老板、汇报主题',
+            bits: [
+              { type: 'SETUP', html: '我刚上班的时候，以为职场最难的是工作。后来发现最难的是听懂工作。', score: '76%', duration: '~30秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
+              { type: 'PUNCHLINE', html: '领导说“这个事你闭环一下”，我当时特别紧张，因为我连开环在哪儿都没找到。', score: '88%', duration: '~34秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
+            ]
+          },
+          {
+            id: 'relationship',
+            title: '相亲与关系',
+            desc: '适合亲密关系、自嘲、家庭催婚',
+            bits: [
+              { type: 'SETUP', html: '我妈给我安排相亲的时候，语气特别像产品经理：这次需求很明确，年底上线。', score: '78%', duration: '~31秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
+              { type: 'TAGLINE', html: '我说妈，感情不能赶进度。她说你放心，我已经排期延期三十年了。', score: '86%', duration: '~29秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
+            ]
+          }
+        ];
+
+        function initShowManager() {
+          ensureInitialShow();
+          hydrateSwitchTargetIfNeeded();
+          bindShowManagerEntry();
+          persistCurrentShowSoon();
+        }
+
+        function bindShowManagerEntry() {
+          const logo = document.querySelector('.logo-area');
+          if (!logo || logo.dataset.showManagerBound) return;
+          logo.dataset.showManagerBound = '1';
+          logo.style.cursor = 'pointer';
+          logo.title = '打开节目管理';
+          logo.addEventListener('click', openShowManager);
+        }
+
+        function ensureInitialShow() {
+          const shows = readShows();
+          if (shows.length) return;
+          const draft = readCurrentDraft();
+          const show = {
+            id: `show-${Date.now()}`,
+            title: draft.title || document.querySelector('.show-title-input')?.value || '北漂十年：你好，北京，我要走了',
+            topic: '个人经历',
+            status: '草稿进行中',
+            updatedAt: new Date().toISOString(),
+            draft
+          };
+          writeShows([show]);
+          localStorage.setItem(ACTIVE_SHOW_KEY, show.id);
+        }
+
+        function openShowManager() {
+          persistCurrentShow();
+          removeModal('showManagerModal');
+          const shows = readShows();
+          const activeId = localStorage.getItem(ACTIVE_SHOW_KEY);
+          const modal = document.createElement('div');
+          modal.id = 'showManagerModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:900px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">节目管理</div>
+              <div class="modal-sub">创建、复制和切换本地脱口秀节目</div>
+              <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:14px;">
+                <div>
+                  <div style="font-size:12px;font-weight:900;color:var(--purple);margin-bottom:10px;">我的节目</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    ${shows.map(show => renderShowCard(show, show.id === activeId)).join('')}
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:12px;font-weight:900;color:var(--gold);margin-bottom:10px;">从模板新建</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+                    ${templates.map(template => `
+                      <button data-create-template="${template.id}" style="text-align:left;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text-soft);cursor:pointer;">
+                        <b style="font-size:13px;color:var(--text-white);">${escapeHtml(template.title)}</b>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${escapeHtml(template.desc)}</div>
+                      </button>
+                    `).join('')}
+                  </div>
+                  <button class="tb-btn btn-purple" data-duplicate-current="1" style="width:100%;justify-content:center;"><i class="fa-regular fa-copy"></i> 复制当前节目</button>
+                </div>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const templateId = event.target.closest('[data-create-template]')?.dataset.createTemplate;
+            if (templateId) createShowFromTemplate(templateId);
+            const switchId = event.target.closest('[data-switch-show]')?.dataset.switchShow;
+            if (switchId) switchShow(switchId);
+            const duplicateId = event.target.closest('[data-duplicate-show]')?.dataset.duplicateShow;
+            if (duplicateId) duplicateShow(duplicateId);
+            const deleteId = event.target.closest('[data-delete-show]')?.dataset.deleteShow;
+            if (deleteId) deleteShow(deleteId);
+            if (event.target.closest('[data-duplicate-current]')) duplicateShow(localStorage.getItem(ACTIVE_SHOW_KEY));
+          });
+        }
+
+        function renderShowCard(show, active) {
+          const bitCount = show.draft?.bits?.length || 0;
+          const title = show.title || show.draft?.title || '未命名节目';
+          return `
+            <div style="background:${active ? 'var(--purple-dim)' : 'var(--bg-raised)'};border:1px solid ${active ? 'rgba(155,109,255,.45)' : 'var(--border)'};border-radius:12px;padding:12px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:900;color:var(--text-white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(title)}</div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${bitCount} 段 · ${new Date(show.updatedAt).toLocaleString()} ${active ? '· 当前' : ''}</div>
+                </div>
+                <button class="ca-btn ok" data-switch-show="${show.id}"><i class="fa-solid fa-arrow-right"></i> 打开</button>
+                <button class="ca-btn" data-duplicate-show="${show.id}"><i class="fa-regular fa-copy"></i></button>
+                <button class="ca-btn" data-delete-show="${show.id}"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>`;
+        }
+
+        function createShowFromTemplate(templateId) {
+          persistCurrentShow();
+          const template = templates.find(item => item.id === templateId) || templates[0];
+          const show = {
+            id: `show-${Date.now()}`,
+            title: template.title === '空白节目' ? '未命名节目' : template.title,
+            topic: template.id,
+            status: '草稿进行中',
+            updatedAt: new Date().toISOString(),
+            draft: {
+              title: template.title === '空白节目' ? '未命名节目' : template.title,
+              bits: template.bits
+            }
+          };
+          const shows = [show, ...readShows()];
+          writeShows(shows);
+          switchShow(show.id);
+        }
+
+        function duplicateShow(showId) {
+          persistCurrentShow();
+          const shows = readShows();
+          const source = shows.find(show => show.id === showId);
+          if (!source) return;
+          const copy = {
+            ...source,
+            id: `show-${Date.now()}`,
+            title: `${source.title || source.draft?.title || '未命名节目'} 副本`,
+            updatedAt: new Date().toISOString(),
+            draft: JSON.parse(JSON.stringify(source.draft || {}))
+          };
+          writeShows([copy, ...shows]);
+          showToast('节目已复制');
+          openShowManager();
+        }
+
+        function deleteShow(showId) {
+          const shows = readShows();
+          if (shows.length <= 1) {
+            showToast('至少保留一个节目');
+            return;
+          }
+          if (!confirm('确认删除这个节目？')) return;
+          const next = shows.filter(show => show.id !== showId);
+          writeShows(next);
+          if (localStorage.getItem(ACTIVE_SHOW_KEY) === showId) {
+            localStorage.setItem(ACTIVE_SHOW_KEY, next[0].id);
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(next[0].draft));
+            location.reload();
+          } else {
+            showToast('节目已删除');
+            openShowManager();
+          }
+        }
+
+        function switchShow(showId) {
+          const show = readShows().find(item => item.id === showId);
+          if (!show) return;
+          persistCurrentShow();
+          localStorage.setItem(ACTIVE_SHOW_KEY, show.id);
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(show.draft));
+          sessionStorage.setItem(SWITCHING_SHOW_KEY, show.id);
+          showToast('正在打开节目');
+          location.reload();
+        }
+
+        function persistCurrentShowSoon() {
+          window.addEventListener('beforeunload', persistCurrentShow);
+          document.addEventListener('input', debouncePersist);
+          document.addEventListener('click', event => {
+            if (event.target.closest?.('.bit-act-btn, .reaction-btn, .add-bit-btn, [data-insert-ai]')) debouncePersist();
+          });
+        }
+
+        let persistTimer = null;
+        function debouncePersist() {
+          clearTimeout(persistTimer);
+          persistTimer = setTimeout(persistCurrentShow, 600);
+        }
+
+        function persistCurrentShow() {
+          if (sessionStorage.getItem(SWITCHING_SHOW_KEY)) return;
+          const activeId = localStorage.getItem(ACTIVE_SHOW_KEY);
+          if (!activeId) return;
+          const draft = serializeCurrentDraft();
+          const shows = readShows();
+          const next = shows.map(show => show.id === activeId ? {
+            ...show,
+            title: draft.title,
+            updatedAt: new Date().toISOString(),
+            draft
+          } : show);
+          writeShows(next);
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        }
+
+        function hydrateSwitchTargetIfNeeded() {
+          const targetId = sessionStorage.getItem(SWITCHING_SHOW_KEY);
+          if (!targetId) return;
+          const show = readShows().find(item => item.id === targetId);
+          if (!show?.draft) {
+            sessionStorage.removeItem(SWITCHING_SHOW_KEY);
+            return;
+          }
+          localStorage.setItem(ACTIVE_SHOW_KEY, show.id);
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(show.draft));
+          applyDraftToDom(show.draft);
+          sessionStorage.removeItem(SWITCHING_SHOW_KEY);
+          showToast(`已打开：${show.title || show.draft.title || '未命名节目'}`);
+        }
+
+        function applyDraftToDom(draft) {
+          const title = document.querySelector('.show-title-input');
+          if (title) title.value = draft.title || '未命名节目';
+          const addRow = document.querySelector('.add-bit-row');
+          if (!addRow || !Array.isArray(draft.bits)) return;
+          document.querySelectorAll('.bit-block').forEach(block => block.remove());
+          draft.bits.forEach(bit => addRow.parentNode.insertBefore(renderManagedBit(bit), addRow));
+          renumberManagedBits();
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(draft.bits.length);
+          document.querySelectorAll('.statusbar .sb:first-child').forEach(el => {
+            el.innerHTML = `<i class="fa-solid fa-microphone-lines"></i> ${escapeHtml((draft.title || '未命名节目').split('：')[0])} · 个人脱口秀`;
+          });
+        }
+
+        function renderManagedBit(bit) {
+          const meta = bitTypeMeta(bit.type);
+          const reactions = bit.reactions || { laugh: 0, smile: 0, flat: 0 };
+          const score = bit.score || '—';
+          const scoreWidth = String(score).includes('%') ? score : '0%';
+          const div = document.createElement('div');
+          div.className = 'bit-block fade-in';
+          div.innerHTML = `
+            <div class="bit-header">
+              <span class="bit-type-tag ${meta.cls}">${meta.label}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${meta.name}</span>
+              <div class="bit-actions">
+                <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
+                <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-vertical"></i></button>
+                <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
+                <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>
+            <div class="bit-score-bar">
+              <span class="score-label">预期笑声</span>
+              <div class="score-track"><div class="score-fill" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
+              <span class="score-val">${escapeHtml(score)}</span>
+            </div>
+            <div class="bit-content" style="padding-left:54px;">
+              <div class="bit-num">00</div>
+              <div class="bit-text" contenteditable="true" spellcheck="false" data-ph="在这里开始写这个 Bit…">${sanitizeManagedHtml(bit.html || '')}</div>
+              <div class="bit-reactions">
+                <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">${Number(reactions.laugh || 0)}</b></button>
+                <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">${Number(reactions.smile || 0)}</b></button>
+                <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">${Number(reactions.flat || 0)}</b></button>
+                <span class="reaction-sep"></span>
+                <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ${escapeHtml(bit.duration || '—')}</span>
+              </div>
+            </div>`;
+          return div;
+        }
+
+        function bitTypeMeta(type) {
+          const map = {
+            SETUP: { cls: 'tag-setup', label: 'SETUP', name: '开场铺垫' },
+            PUNCHLINE: { cls: 'tag-punchline', label: 'PUNCHLINE', name: '核心笑点' },
+            TAGLINE: { cls: 'tag-tagline', label: 'TAGLINE', name: '补充笑点' },
+            CALLBACK: { cls: 'tag-callback', label: 'CALLBACK', name: '回扣笑点' },
+            OBSERVATIONAL: { cls: 'tag-observational', label: '观察类', name: '生活素材' }
+          };
+          return map[type] || map.SETUP;
+        }
+
+        function renumberManagedBits() {
+          document.querySelectorAll('.bit-block').forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+        }
+
+        function sanitizeManagedHtml(html) {
+          const template = document.createElement('template');
+          template.innerHTML = html || '';
+          template.content.querySelectorAll('script, style, iframe, object, embed').forEach(node => node.remove());
+          return template.innerHTML;
+        }
+
+        function serializeCurrentDraft() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+              type: detectType(block),
+              html: block.querySelector('.bit-text')?.innerHTML || '',
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function readCurrentDraft() {
+          try {
+            return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null') || serializeCurrentDraft();
+          } catch {
+            return serializeCurrentDraft();
+          }
+        }
+
+        function readShows() {
+          try {
+            return JSON.parse(localStorage.getItem(SHOWS_KEY) || '[]');
+          } catch {
+            return [];
+          }
+        }
+
+        function writeShows(shows) {
+          localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+        }
+
+        function detectType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (tag?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag?.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag?.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initShowManager);
+        } else {
+          initShowManager();
+        }
+      })();
+    </script>
   </body>
 </html>
