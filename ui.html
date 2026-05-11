@@ -734,6 +734,31 @@
         position: relative;
       }
 
+      .bit-block.dragging {
+        opacity: .42;
+        transform: scale(.99);
+      }
+
+      .bit-block.drag-over .bit-content {
+        border-color: rgba(62, 207, 176, .45);
+        box-shadow: 0 0 0 1px rgba(62, 207, 176, .18);
+      }
+
+      .drag-placeholder {
+        height: 58px;
+        border: 1px dashed rgba(62, 207, 176, .55);
+        background: rgba(62, 207, 176, .08);
+        border-radius: 14px;
+        margin: -12px 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--teal);
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .3px;
+      }
+
       .bit-header {
         display: flex;
         align-items: center;
@@ -791,6 +816,15 @@
 
       .bit-block:hover .bit-actions {
         opacity: 1;
+      }
+
+      .bit-act-btn[data-drag-handle] {
+        cursor: grab;
+        touch-action: none;
+      }
+
+      .bit-act-btn[data-drag-handle]:active {
+        cursor: grabbing;
       }
 
       .bit-act-btn {
@@ -7430,10 +7464,12 @@
     <script>
       (() => {
         const AI_HISTORY_KEY = 'riffmaster.ai.generations.v1';
+        let currentEditingBlock = null;
 
         function initFullAIWorkflow() {
           overrideChatActions();
           bindCapturedAIButtons();
+          bindCurrentEditingTracker();
           addAIHistoryButton();
           window.riffAiAction = runAIAction;
         }
@@ -7504,6 +7540,29 @@
           }, true);
         }
 
+        function bindCurrentEditingTracker() {
+          document.addEventListener('focusin', event => {
+            const block = event.target.closest?.('.bit-block');
+            if (block) setCurrentEditingBlock(block);
+          });
+
+          document.addEventListener('input', event => {
+            const block = event.target.closest?.('.bit-block');
+            if (block) setCurrentEditingBlock(block);
+          });
+
+          document.addEventListener('click', event => {
+            const block = event.target.closest?.('.bit-block');
+            if (block) setCurrentEditingBlock(block);
+          });
+        }
+
+        function setCurrentEditingBlock(block) {
+          currentEditingBlock = block;
+          document.querySelectorAll('.bit-content').forEach(el => el.classList.remove('active'));
+          block.querySelector('.bit-content')?.classList.add('active');
+        }
+
         async function runAIAction(action, prompt, options = {}) {
           activateChatTab();
           appendChatMessage('me', prompt);
@@ -7556,7 +7615,7 @@
           } else {
             const canInsert = action.insertText || action.insertHtml;
             const actions = canInsert
-              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert-after="1"><i class="fa-solid fa-check"></i> 当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
+              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert-after="1"><i class="fa-solid fa-check"></i> 插入当前</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
               : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
             row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actions}</div>`;
             row.querySelector('[data-real-ai-insert-after]')?.addEventListener('click', () => insertGeneratedBit(action, 'after'));
@@ -7653,7 +7712,7 @@
               </div>
               <div style="font-size:12px;color:var(--text-soft);line-height:1.65;margin-bottom:8px;">${escapeHtml(content).slice(0, 260)}</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button class="ca-btn ok" data-ai-history-action="insert-after" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-check"></i> 插入当前后</button>
+                <button class="ca-btn ok" data-ai-history-action="insert-after" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-check"></i> 插入当前</button>
                 <button class="ca-btn" data-ai-history-action="insert-end" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-plus"></i> 插入末尾</button>
                 <button class="ca-btn" data-ai-history-action="copy" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-regular fa-copy"></i> 复制</button>
                 <button class="ca-btn" data-ai-history-action="retry" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-rotate"></i> 再生成</button>
@@ -7666,6 +7725,7 @@
           const html = action.insertHtml || escapeHtml(action.insertText || '');
           if (!html) return;
           const before = Array.from(document.querySelectorAll('.bit-block'));
+          const target = mode === 'after' ? findCurrentEditingBlock(before) : null;
           window.addBit?.({
             type: action.type || 'OBSERVATIONAL',
             html,
@@ -7674,12 +7734,21 @@
           const after = Array.from(document.querySelectorAll('.bit-block'));
           const created = after.find(block => !before.includes(block)) || after[after.length - 1];
           if (mode === 'after' && created) {
-            const target = document.querySelector('.bit-content.active')?.closest('.bit-block') || before[before.length - 1];
             if (target && target !== created) target.after(created);
+            setCurrentEditingBlock(created);
             renumberBits();
           }
           markGeneration(action.generationId || action.id, mode === 'after' ? 'inserted-after' : 'inserted-end');
           showToast(mode === 'after' ? '已插入当前段后' : '已插入末尾');
+        }
+
+        function findCurrentEditingBlock(existingBlocks) {
+          const active = document.querySelector('.bit-content.active')?.closest('.bit-block');
+          const focused = document.activeElement?.closest?.('.bit-block');
+          if (focused && existingBlocks.includes(focused)) return focused;
+          if (currentEditingBlock && existingBlocks.includes(currentEditingBlock)) return currentEditingBlock;
+          if (active && existingBlocks.includes(active)) return active;
+          return existingBlocks[existingBlocks.length - 1] || null;
         }
 
         function recordGeneration(action, prompt, result, source) {
@@ -7849,6 +7918,206 @@
           document.addEventListener('DOMContentLoaded', initFullAIWorkflow);
         } else {
           initFullAIWorkflow();
+        }
+      })();
+    </script>
+    <script>
+      (() => {
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        const SHOWS_KEY = 'riffmaster.prototype.shows.v1';
+        const ACTIVE_SHOW_KEY = 'riffmaster.prototype.activeShowId.v1';
+        let draggedBlock = null;
+        let placeholder = null;
+
+        function initBitDragSort() {
+          prepareDragHandles();
+          bindDragEvents();
+        }
+
+        function prepareDragHandles() {
+          document.querySelectorAll('.bit-block').forEach(prepareBlock);
+        }
+
+        function prepareBlock(block) {
+          const actions = block.querySelectorAll('.bit-act-btn');
+          const handle = block.querySelector('.bit-act-btn[title="移动"]') || actions[1];
+          if (!handle || handle.dataset.dragHandle) return;
+          handle.dataset.dragHandle = '1';
+          handle.draggable = true;
+          handle.title = '拖拽调整段落位置，点击打开移动菜单';
+        }
+
+        function bindDragEvents() {
+          const observer = new MutationObserver(() => prepareDragHandles());
+          const canvas = document.querySelector('.editor-canvas');
+          if (canvas) observer.observe(canvas, { childList: true, subtree: true });
+
+          document.addEventListener('dragstart', event => {
+            const handle = event.target.closest?.('[data-drag-handle]');
+            if (!handle) return;
+            draggedBlock = handle.closest('.bit-block');
+            if (!draggedBlock) return;
+            prepareDragHandles();
+            placeholder = createPlaceholder();
+            draggedBlock.classList.add('dragging');
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', String(getBitIndex(draggedBlock) + 1));
+            setTimeout(() => {
+              if (draggedBlock?.parentNode && placeholder) draggedBlock.parentNode.insertBefore(placeholder, draggedBlock.nextSibling);
+            }, 0);
+          });
+
+          document.addEventListener('dragover', event => {
+            if (!draggedBlock || !placeholder) return;
+            const target = event.target.closest?.('.bit-block');
+            const addRow = document.querySelector('.add-bit-row');
+            if (!target && !event.target.closest?.('.editor-canvas')) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            document.querySelectorAll('.bit-block.drag-over').forEach(block => block.classList.remove('drag-over'));
+            const blocks = Array.from(document.querySelectorAll('.bit-block')).filter(block => block !== draggedBlock);
+            const afterElement = getDragAfterElement(blocks, event.clientY);
+            const parent = addRow?.parentElement || document.querySelector('.editor-canvas');
+            if (!parent) return;
+            if (afterElement == null) parent.insertBefore(placeholder, addRow || null);
+            else parent.insertBefore(placeholder, afterElement);
+            const near = afterElement || blocks[blocks.length - 1];
+            near?.classList.add('drag-over');
+          });
+
+          document.addEventListener('drop', event => {
+            if (!draggedBlock || !placeholder) return;
+            event.preventDefault();
+            placeholder.parentNode?.insertBefore(draggedBlock, placeholder);
+            finishDragSort(true);
+          });
+
+          document.addEventListener('dragend', () => finishDragSort(false));
+        }
+
+        function finishDragSort(didDrop) {
+          document.querySelectorAll('.bit-block.drag-over').forEach(block => block.classList.remove('drag-over'));
+          if (draggedBlock) draggedBlock.classList.remove('dragging');
+          placeholder?.remove();
+          if (didDrop) {
+            renumberBits();
+            persistDragOrder();
+            setActiveBlock(draggedBlock);
+            showToast('段落顺序已更新');
+          }
+          draggedBlock = null;
+          placeholder = null;
+        }
+
+        function getDragAfterElement(blocks, y) {
+          return blocks.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+              return { offset, element: child };
+            }
+            return closest;
+          }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+        }
+
+        function createPlaceholder() {
+          const div = document.createElement('div');
+          div.className = 'drag-placeholder';
+          div.textContent = '释放到这里';
+          return div;
+        }
+
+        function getBitIndex(block) {
+          return Array.from(document.querySelectorAll('.bit-block')).indexOf(block);
+        }
+
+        function setActiveBlock(block) {
+          if (!block) return;
+          document.querySelectorAll('.bit-content').forEach(content => content.classList.remove('active'));
+          block.querySelector('.bit-content')?.classList.add('active');
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function renumberBits() {
+          document.querySelectorAll('.bit-block').forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(document.querySelectorAll('.bit-block').length);
+        }
+
+        function persistDragOrder() {
+          const draft = serializeDraft();
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+          const activeId = localStorage.getItem(ACTIVE_SHOW_KEY);
+          if (activeId) {
+            const shows = readShows().map(show => show.id === activeId ? { ...show, draft, updatedAt: new Date().toISOString() } : show);
+            localStorage.setItem(SHOWS_KEY, JSON.stringify(shows));
+          }
+          updateSaveIndicator();
+        }
+
+        function serializeDraft() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+              type: detectType(block),
+              html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function detectType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (tag?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag?.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag?.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function sanitizeHtml(html) {
+          const template = document.createElement('template');
+          template.innerHTML = html || '';
+          template.content.querySelectorAll('script, style, iframe, object, embed').forEach(node => node.remove());
+          return template.innerHTML;
+        }
+
+        function readShows() {
+          try {
+            return JSON.parse(localStorage.getItem(SHOWS_KEY) || '[]');
+          } catch {
+            return [];
+          }
+        }
+
+        function updateSaveIndicator() {
+          const saveText = document.getElementById('saveText');
+          if (saveText) saveText.textContent = '已保存';
+          const sync = document.querySelector('[data-sync-indicator]');
+          if (sync) sync.textContent = '本地已同步';
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initBitDragSort);
+        } else {
+          initBitDragSort();
         }
       })();
     </script>
