@@ -6612,5 +6612,253 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        let slashTarget = null;
+
+        const commands = [
+          { id: 'new-bit', title: '新增段落', hint: '在稿件末尾添加一个新 Bit', run: () => window.addBit?.() },
+          { id: 'ai-callback', title: 'AI 生成 Callback', hint: '基于当前主题生成回扣段落', run: () => window.doSuggest?.() },
+          { id: 'search', title: '全文搜索', hint: '搜索稿件并定位段落', run: () => dispatchShortcut('f') },
+          { id: 'show-manager', title: '节目管理', hint: '创建、复制和切换节目', run: () => document.querySelector('.logo-area')?.click() },
+          { id: 'theme-map', title: '主题地图', hint: '查看关键词和结构链路', run: () => document.querySelector('.rail-btn[title="主题地图"]')?.click() },
+          { id: 'laugh-analysis', title: '笑点分析', hint: '打开详细分析和弱段定位', run: () => document.querySelector('.rail-btn[title="笑点分析"]')?.click() },
+          { id: 'rehearsal', title: '进入排练模式', hint: '打开排练参数选择', run: () => document.querySelector('.tb-btn.btn-border')?.click() },
+          { id: 'transcript', title: '导入录音稿', hint: '粘贴转写并拆分为 Bit', run: () => document.querySelector('.rail-btn[title="录音稿"]')?.click() },
+          { id: 'readiness', title: '发布前检查', hint: '检查稿件是否适合排练/演出', run: openReadinessModal },
+          { id: 'export-json', title: '导出 JSON 草稿', hint: '备份当前稿件结构化数据', run: () => dispatchShortcut('e', true) }
+        ];
+
+        const slashItems = [
+          { label: 'Setup 铺垫', text: '你们有没有发现，' },
+          { label: 'Punchline 反转', text: '但真正离谱的是，' },
+          { label: 'Tagline 补刀', text: '更可怕的是，' },
+          { label: 'Callback 回扣', text: '这就回到了开头那个问题：' },
+          { label: '停顿标记', text: ' [停顿] ' },
+          { label: '舞台方向', text: ' [走到舞台中央] ' }
+        ];
+
+        function initCommandAndReadinessFeatures() {
+          bindCommandPalette();
+          bindReadinessEntry();
+          bindSlashMenu();
+          addCommandHint();
+        }
+
+        function bindCommandPalette() {
+          document.addEventListener('keydown', event => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+              event.preventDefault();
+              openCommandPalette();
+            }
+          });
+        }
+
+        function bindReadinessEntry() {
+          document.addEventListener('click', event => {
+            const completion = event.target.closest?.('.statusbar .sb:last-child');
+            if (completion) openReadinessModal();
+          });
+        }
+
+        function bindSlashMenu() {
+          document.addEventListener('keyup', event => {
+            const target = event.target;
+            if (!target.matches?.('.bit-text[contenteditable="true"]')) return;
+            if (event.key === '/') {
+              slashTarget = target;
+              openSlashMenu(target);
+            }
+          });
+
+          document.addEventListener('click', event => {
+            if (!event.target.closest?.('#slashMenu')) document.getElementById('slashMenu')?.remove();
+          });
+        }
+
+        function addCommandHint() {
+          const right = document.querySelector('.tb-right');
+          if (!right || right.querySelector('[data-command-hint]')) return;
+          const hint = document.createElement('button');
+          hint.dataset.commandHint = '1';
+          hint.className = 'tb-btn btn-ghost';
+          hint.innerHTML = '<i class="fa-solid fa-keyboard"></i> Cmd K';
+          hint.title = '打开命令面板';
+          hint.addEventListener('click', openCommandPalette);
+          right.insertBefore(hint, right.firstChild);
+        }
+
+        function openCommandPalette() {
+          removeModal('commandPaletteModal');
+          const modal = document.createElement('div');
+          modal.id = 'commandPaletteModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:680px;padding:18px;">
+              <input id="commandInput" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;color:var(--text-white);padding:13px 14px;outline:none;font-size:15px;margin-bottom:12px;" placeholder="输入命令，例如：排练、搜索、Callback">
+              <div id="commandList" style="display:flex;flex-direction:column;gap:6px;max-height:440px;overflow:auto;"></div>
+            </div>`;
+          document.body.appendChild(modal);
+          const input = document.getElementById('commandInput');
+          input.focus();
+          renderCommands('');
+          input.addEventListener('input', () => renderCommands(input.value));
+          input.addEventListener('keydown', event => {
+            if (event.key === 'Escape') modal.remove();
+            if (event.key === 'Enter') {
+              const first = document.querySelector('[data-run-command]');
+              if (first) first.click();
+            }
+          });
+          modal.addEventListener('click', event => {
+            if (event.target === modal) modal.remove();
+            const id = event.target.closest('[data-run-command]')?.dataset.runCommand;
+            if (id) {
+              const command = commands.find(item => item.id === id);
+              modal.remove();
+              command?.run();
+            }
+          });
+        }
+
+        function renderCommands(query) {
+          const q = query.trim().toLowerCase();
+          const list = document.getElementById('commandList');
+          const filtered = commands.filter(command => !q || `${command.title}${command.hint}`.toLowerCase().includes(q));
+          list.innerHTML = filtered.map(command => `
+            <button data-run-command="${command.id}" style="text-align:left;border:1px solid var(--border);background:var(--bg-card);border-radius:10px;padding:11px 12px;color:var(--text-soft);cursor:pointer;">
+              <div style="font-size:13px;font-weight:900;color:var(--text-white);">${escapeHtml(command.title)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${escapeHtml(command.hint)}</div>
+            </button>
+          `).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:16px;text-align:center;">没有匹配命令</div>';
+        }
+
+        function openReadinessModal() {
+          removeModal('readinessModal');
+          const checks = buildReadinessChecks();
+          const passed = checks.filter(item => item.ok).length;
+          const modal = document.createElement('div');
+          modal.id = 'readinessModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:680px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">发布 / 排练前检查</div>
+              <div class="modal-sub">完成 ${passed}/${checks.length} 项 · 用于判断是否适合进入排练</div>
+              <div style="height:8px;background:var(--bg-raised);border-radius:6px;overflow:hidden;margin-bottom:16px;">
+                <div style="height:100%;width:${Math.round(passed / checks.length * 100)}%;background:linear-gradient(to right,var(--purple),var(--pink),var(--gold));"></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                ${checks.map((check, index) => `
+                  <div style="display:flex;align-items:center;gap:10px;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:10px 12px;">
+                    <span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${check.ok ? 'var(--teal-dim)' : 'var(--orange-dim)'};color:${check.ok ? 'var(--teal)' : 'var(--orange)'};font-size:12px;font-weight:900;">${check.ok ? '✓' : '!'}</span>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:800;color:var(--text-white);">${escapeHtml(check.title)}</div>
+                      <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">${escapeHtml(check.desc)}</div>
+                    </div>
+                    ${check.action ? `<button class="ca-btn" data-readiness-action="${index}">${escapeHtml(check.action)}</button>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+              <button class="tb-btn btn-purple" data-start-ready-rehearsal="1" style="width:100%;justify-content:center;margin-top:16px;"><i class="fa-solid fa-play"></i> 进入排练模式</button>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-start-ready-rehearsal]')) {
+              modal.remove();
+              document.querySelector('.tb-btn.btn-border')?.click();
+            }
+            const actionIndex = event.target.closest('[data-readiness-action]')?.dataset.readinessAction;
+            if (actionIndex !== undefined) {
+              checks[Number(actionIndex)].run?.();
+              modal.remove();
+            }
+          });
+        }
+
+        function openSlashMenu(target) {
+          document.getElementById('slashMenu')?.remove();
+          const rect = target.getBoundingClientRect();
+          const menu = document.createElement('div');
+          menu.id = 'slashMenu';
+          menu.style.cssText = `position:fixed;left:${Math.min(rect.left + 16, window.innerWidth - 240)}px;top:${Math.min(rect.bottom + 6, window.innerHeight - 260)}px;width:230px;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.5);z-index:9800;padding:6px;`;
+          menu.innerHTML = slashItems.map((item, index) => `
+            <button data-slash-index="${index}" style="width:100%;text-align:left;border:none;background:transparent;color:var(--text-soft);padding:9px 10px;border-radius:8px;cursor:pointer;font-size:12px;">
+              <b style="color:var(--purple);">${escapeHtml(item.label)}</b>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${escapeHtml(item.text)}</div>
+            </button>
+          `).join('');
+          document.body.appendChild(menu);
+          menu.addEventListener('click', event => {
+            const index = event.target.closest('[data-slash-index]')?.dataset.slashIndex;
+            if (index === undefined) return;
+            insertSlashText(slashItems[Number(index)].text);
+            menu.remove();
+          });
+        }
+
+        function insertSlashText(text) {
+          if (!slashTarget) return;
+          slashTarget.focus();
+          const current = slashTarget.innerText;
+          if (current.endsWith('/')) {
+            document.execCommand('delete');
+          }
+          document.execCommand('insertText', false, text);
+        }
+
+        function buildReadinessChecks() {
+          const title = document.querySelector('.show-title-input')?.value.trim() || '';
+          const bits = getBits();
+          const callbacks = bits.filter(bit => /CALLBACK|回扣/.test(bit.type) || /回到|开头|游客|歪脖子树/.test(bit.text));
+          const longBits = bits.filter(bit => bit.text.length > 180);
+          const strongScores = Array.from(document.querySelectorAll('.score-val')).filter(el => Number(el.textContent.replace('%', '')) >= 80);
+          return [
+            { ok: title && title !== '未命名节目', title: '节目标题明确', desc: title || '当前标题为空', action: '编辑标题', run: () => document.querySelector('.show-title-input')?.focus() },
+            { ok: bits.length >= 5, title: '段落数量达标', desc: `当前 ${bits.length} 段，建议至少 5 段`, action: '新增段落', run: () => window.addBit?.() },
+            { ok: callbacks.length >= 1, title: '具备 Callback 回扣', desc: callbacks.length ? `检测到 ${callbacks.length} 个回扣机会` : '建议补一个结尾回扣', action: '生成 Callback', run: () => window.doSuggest?.() },
+            { ok: longBits.length === 0, title: '没有明显过长段落', desc: longBits.length ? `${longBits.length} 段超过 180 字` : '段落长度健康', action: '打开分析', run: () => document.querySelector('.rail-btn[title="笑点分析"]')?.click() },
+            { ok: strongScores.length >= 2, title: '强笑点储备', desc: `当前 ${strongScores.length} 个 80%+ 笑点`, action: 'AI 优化', run: () => document.querySelector('.tb-btn.btn-gold')?.click() }
+          ];
+        }
+
+        function getBits() {
+          return Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+            type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block.querySelector('.bit-text')?.innerText.trim() || ''
+          })).filter(bit => bit.text);
+        }
+
+        function dispatchShortcut(key, shift = false) {
+          document.dispatchEvent(new KeyboardEvent('keydown', {
+            key,
+            metaKey: navigator.platform.toLowerCase().includes('mac'),
+            ctrlKey: !navigator.platform.toLowerCase().includes('mac'),
+            shiftKey: shift,
+            bubbles: true
+          }));
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function escapeHtml(text) {
+          return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initCommandAndReadinessFeatures);
+        } else {
+          initCommandAndReadinessFeatures();
+        }
+      })();
+    </script>
   </body>
 </html>
