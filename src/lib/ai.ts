@@ -3,11 +3,11 @@ import type { AIMessage, AIOptimizeResult, Bit, Show } from "@/types/riffmaster"
 
 const replies = [
   "好问题！这部分的关键在于 Rule of Three：前两个细节建立规律，第三个细节突然打破观众预期。建议把最荒诞的词放在句尾。",
-  "我注意到「北京」和「游客」形成了很好的身份对照。结尾再次呼应游客，可以让整场从生活观察收束到情绪表达。",
-  "从目前结构看，第3、4段连续偏观察类，中间可以插入一个更私人化的自嘲段落，让观众从看热闹切换到共情。"
+  "我建议先明确你的真实态度：不是发生了什么，而是你为什么被这件事冒犯、击中或逗笑。这个态度会决定 Punchline 的方向。",
+  "从结构看，可以先用一个短 Hook 建立处境，再用具体细节铺垫，最后把最反常、最丢脸或最荒诞的词放到句尾。"
 ];
 
-export async function mockChatWithContext(message: string): Promise<AIMessage> {
+export async function localChatWithContext(message: string): Promise<AIMessage> {
   await delay(600);
   const content = replies[Math.abs(hash(message)) % replies.length];
   return {
@@ -21,7 +21,7 @@ export async function mockChatWithContext(message: string): Promise<AIMessage> {
   };
 }
 
-export async function mockOptimizeBit(bit: Bit, show: Show): Promise<AIOptimizeResult> {
+export async function localOptimizeBit(bit: Bit, show: Show): Promise<AIOptimizeResult> {
   await delay(700);
   const result: AIOptimizeResult = {
     title: `优化 ${bit.title}`,
@@ -29,27 +29,27 @@ export async function mockOptimizeBit(bit: Bit, show: Show): Promise<AIOptimizeR
     generatedBit: {
       type: bit.type,
       title: `${bit.title} · AI 改写`,
-      html: `${bit.plainText} <strong>但真正可怕的是，我以为自己在选择城市，其实城市一直在选择我的房租。</strong>`,
-      plainText: `${bit.plainText} 但真正可怕的是，我以为自己在选择城市，其实城市一直在选择我的房租。`,
+      html: `${bit.plainText} <strong>但真正可怕的是，我以为这是一个选择题，后来发现它是生活给我的阅读理解。</strong>`,
+      plainText: `${bit.plainText} 但真正可怕的是，我以为这是一个选择题，后来发现它是生活给我的阅读理解。`,
       estimatedDurationSeconds: Math.max(20, bit.estimatedDurationSeconds),
-      keywords: [...new Set([...bit.keywords, "房租", "反转"])]
+      keywords: [...new Set([...bit.keywords, "反转"])]
     }
   };
   return aiOptimizeResultSchema.parse(result);
 }
 
-export async function mockGenerateCallback(): Promise<AIOptimizeResult> {
+export async function localGenerateCallback(): Promise<AIOptimizeResult> {
   await delay(700);
   const result: AIOptimizeResult = {
     title: "生成 Callback",
-    suggestion: "用「游客」回扣开头身份，用「歪脖子树」回扣中段场景，形成双重闭环。",
+    suggestion: "回扣开头的核心关键词，同时把中段最具体的场景再拿回来，让结尾既熟悉又意外。",
     generatedBit: {
       type: "CALLBACK",
-      title: "游客回扣",
-      html: '后来我才明白，北京不是不留我。北京只是很认真地给我办了一张<span class="kw">十年游客年卡</span>。唯一的会员权益是：每次迷路，都能看到那棵歪脖子树还在。',
-      plainText: "后来我才明白，北京不是不留我。北京只是很认真地给我办了一张十年游客年卡。唯一的会员权益是：每次迷路，都能看到那棵歪脖子树还在。",
+      title: "结尾回扣",
+      html: '所以讲到最后我才发现，开头那个问题根本没有解决。它只是换了个姿势回来，像生活特别懂脱口秀，还知道什么叫 <span class="kw">Callback</span>。',
+      plainText: "所以讲到最后我才发现，开头那个问题根本没有解决。它只是换了个姿势回来，像生活特别懂脱口秀，还知道什么叫 Callback。",
       estimatedDurationSeconds: 35,
-      keywords: ["游客", "歪脖子树", "回扣"]
+      keywords: ["回扣", "结尾"]
     }
   };
   return aiOptimizeResultSchema.parse(result);

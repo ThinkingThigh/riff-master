@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { aiChatRequestSchema } from "@/lib/contracts";
-import { mockChatWithContext } from "@/lib/ai";
+import { localChatWithContext } from "@/lib/ai";
 import { chatCompletionText } from "@/lib/server/ai-client";
 
 export async function POST(request: Request) {
@@ -11,15 +11,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid AI chat request", issues: parsed.error.issues }, { status: 400 });
   }
 
-  const fallback = await mockChatWithContext(parsed.data.message);
+  const fallback = await localChatWithContext(parsed.data.message);
 
   try {
     const content = await chatCompletionText(
       [
         {
           role: "system",
-          content:
-            "你是 RiffMaster 的中文单口喜剧创作助手。回答要具体、短、可执行，优先给结构建议、句子改写和舞台处理。"
+          content: [
+            "你是 RiffMaster 的中文单口喜剧编剧教练。",
+            "回答必须具体、短、可执行，优先给可直接写进稿子的句子，而不是泛泛建议。",
+            "使用脱口秀工作流：Premise → Angle → Setup → Punchline → Tag → Callback → Polish。",
+            "判断标准：是否有真实态度、是否有误导、句尾是否有反转词、铺垫是否过长、是否能上台口语化表达。",
+            "如果用户问怎么改，必须给 1 个明确策略 + 1 段可替换示例 + 1 个下一步动作。"
+          ].join("\n")
         },
         {
           role: "user",

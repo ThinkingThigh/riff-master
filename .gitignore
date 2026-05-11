@@ -46,3 +46,6 @@ Thumbs.db
 
 # local cursor artifacts
 .cursor/plans/
+
+# local prototype data
+.riffmaster-data/

@@ -1238,6 +1238,7 @@
         border-bottom: 1px solid var(--border);
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 10px;
       }
 
@@ -1281,6 +1282,7 @@
 
       .rp-head-info {
         flex: 1;
+        min-width: 0;
       }
 
       .rp-title {
@@ -1293,6 +1295,47 @@
         font-size: 11px;
         color: var(--text-muted);
         margin-top: 1px;
+      }
+
+      .rp-ai-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 2px;
+      }
+
+      .rp-ai-action {
+        min-width: 0;
+        min-height: 38px;
+        border: 1px solid rgba(155, 109, 255, .32);
+        background: rgba(155, 109, 255, .1);
+        color: var(--purple);
+        border-radius: 12px;
+        padding: 7px 8px;
+        font-size: 11px;
+        font-weight: 900;
+        cursor: pointer;
+        font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
+        line-height: 1;
+        transition: all .15s;
+      }
+
+      .rp-ai-action:hover {
+        transform: translateY(-1px);
+        border-color: rgba(155, 109, 255, .65);
+        background: rgba(155, 109, 255, .16);
+      }
+
+      .rp-ai-action.gold {
+        border-color: rgba(245, 200, 66, .36);
+        background: rgba(245, 200, 66, .1);
+        color: var(--gold);
       }
 
       /* 面板 Tab */
@@ -2114,7 +2157,7 @@
       <div class="v-sep" style="margin:0 16px;"></div>
 
       <div class="tb-center">
-        <input class="show-title-input" value="北漂十年：你好，北京，我要走了" type="text" />
+        <input class="show-title-input" value="未命名节目" type="text" />
         <span class="status-chip chip-live">草稿进行中</span>
       </div>
 
@@ -2132,7 +2175,7 @@
         <button class="tb-btn btn-ghost" style="padding:6px 8px;">
           <i class="fa-regular fa-bell" style="font-size:14px;"></i>
         </button>
-        <div class="user-av">李</div>
+        <div class="user-av"><i class="fa-regular fa-user"></i></div>
       </div>
     </header>
 
@@ -2182,111 +2225,7 @@
         </div>
 
         <div class="lp-list">
-          <div class="mat-group">
-            <div class="mat-group-label">当前节目</div>
-
-            <div class="mat-item on">
-              <div class="mat-icon" style="background:rgba(155,109,255,0.15);">
-                <i class="fa-solid fa-microphone" style="color:var(--purple);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">北漂十年感悟</div>
-                <div class="mat-meta">
-                  <span>12段</span>
-                  <span>·</span>
-                  <span style="color:var(--gold);">★ 热门</span>
-                </div>
-              </div>
-              <span class="mat-badge" style="background:rgba(155,109,255,0.15);color:var(--purple);">主稿</span>
-            </div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(245,200,66,0.1);">
-                <i class="fa-solid fa-lightbulb" style="color:var(--gold);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">租房奇葩经历</div>
-                <div class="mat-meta"><span>5段</span><span>·</span><span>备用素材</span></div>
-              </div>
-            </div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(62,207,176,0.1);">
-                <i class="fa-solid fa-train-subway" style="color:var(--teal);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">地铁上的人类</div>
-                <div class="mat-meta"><span>8段</span><span>·</span><span>观察喜剧</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mat-group">
-            <div class="mat-group-label">话题池</div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(255,107,157,0.1);">
-                <i class="fa-solid fa-heart-pulse" style="color:var(--pink);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">相亲那些事</div>
-                <div class="mat-meta"><span>3段</span><span>·</span><span>关系类</span></div>
-              </div>
-              <span class="mat-badge" style="background:rgba(255,107,157,0.12);color:var(--pink);">新</span>
-            </div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(255,140,66,0.1);">
-                <i class="fa-solid fa-briefcase" style="color:var(--orange);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">职场黑话大赏</div>
-                <div class="mat-meta"><span>11段</span><span>·</span><span>职场类</span></div>
-              </div>
-            </div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(62,207,176,0.1);">
-                <i class="fa-solid fa-mobile-screen" style="color:var(--teal);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">互联网黑话</div>
-                <div class="mat-meta"><span>7段</span><span>·</span><span>科技类</span></div>
-              </div>
-            </div>
-
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(245,200,66,0.1);">
-                <i class="fa-solid fa-bowl-food" style="color:var(--gold);"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">外卖人生哲学</div>
-                <div class="mat-meta"><span>4段</span><span>·</span><span>生活观察</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="mat-group">
-            <div class="mat-group-label">灵感记录</div>
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(255,77,109,0.1);">
-                <i class="fa-solid fa-bolt" style="color:var(--red);font-size:11px;"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">地铁广告词槽点</div>
-                <div class="mat-meta"><span>随手记</span><span>·</span><span>2分钟前</span></div>
-              </div>
-            </div>
-            <div class="mat-item">
-              <div class="mat-icon" style="background:rgba(155,109,255,0.1);">
-                <i class="fa-solid fa-bolt" style="color:var(--purple);font-size:11px;"></i>
-              </div>
-              <div class="mat-body">
-                <div class="mat-name">老板当众表扬</div>
-                <div class="mat-meta"><span>随手记</span><span>·</span><span>昨天</span></div>
-              </div>
-            </div>
-          </div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7;padding:12px;">暂无素材。生成初稿或导入文本后会实时显示。</div>
         </div>
 
         <div class="lp-footer">
@@ -2329,7 +2268,7 @@
             <div class="laugh-meter">
               <i class="fa-solid fa-face-laugh-squint"></i>
               <span class="laugh-label">笑点密度</span>
-              <span class="laugh-val">8.4</span>
+              <span class="laugh-val">0</span>
               <span style="font-size:10px;color:var(--text-muted);">/10</span>
             </div>
             <div class="tool-sep"></div>
@@ -2344,9 +2283,9 @@
 
             <!-- 节目头 -->
             <div class="show-kicker">
-              <span class="kicker-pill"><i class="fa-solid fa-microphone-lines" style="margin-right:5px;"></i>STAND-UP · 个人经历</span>
+              <span class="kicker-pill"><i class="fa-solid fa-microphone-lines" style="margin-right:5px;"></i>等待节目类型</span>
               <span class="kicker-sep"></span>
-              <span style="font-size:11px;color:var(--text-faint);">时长预计 18 分钟</span>
+              <span style="font-size:11px;color:var(--text-faint);">时长预计 0 分钟</span>
             </div>
 
             <!-- ── Bit 1 ── -->
@@ -2366,19 +2305,18 @@
                 <div class="score-track">
                   <div class="score-fill" id="s1" style="width:0;background:linear-gradient(to right,#3ECFB0,#9B6DFF);"></div>
                 </div>
-                <span class="score-val">62%</span>
+                <span class="score-val">—</span>
               </div>
               <div class="bit-content active" style="padding-left:54px;">
                 <div class="bit-num">01</div>
                 <div class="bit-text" contenteditable="true" spellcheck="false">
-                  我在北京待了<span class="kw">整整十年</span>。你们知道北京十年意味着什么吗？意味着我<span class="kw-purple">掌握了一项核心技能</span>——我能精准判断，一条路，我走还是不走——<strong>全看导航上那个小红点是静止的，还是在轻微地颤抖。</strong>
                 </div>
                 <div class="bit-reactions">
-                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">12</b></button>
-                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">5</b></button>
-                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">1</b></button>
+                  <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
                   <span class="reaction-sep"></span>
-                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~45秒</span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
                 </div>
               </div>
             </div>
@@ -2400,29 +2338,28 @@
                 <div class="score-track">
                   <div class="score-fill" id="s2" style="width:0;background:linear-gradient(to right,#FF8C42,#FF6B9D);"></div>
                 </div>
-                <span class="score-val">91%</span>
+                <span class="score-val">—</span>
               </div>
               <div class="bit-content" style="padding-left:54px;">
                 <div class="bit-num">02</div>
                 <div class="bit-text" contenteditable="true" spellcheck="false">
-                  但我最近决定离开北京。我妈听说之后，<span class="kw-pink">震惊</span>地问我：儿子，你是不是被北京的什么人欺负了？我说，妈，没有，北京对我挺好的——它只是<span class="kw">收了我十年房租</span>，然后很客气地告诉我，<strong>我永远是这座城市的游客。</strong>
                 </div>
                 <div class="bit-reactions">
-                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">28</b></button>
-                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">3</b></button>
+                  <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
                   <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
                   <span class="reaction-sep"></span>
-                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~50秒</span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
                 </div>
               </div>
             </div>
 
             <!-- AI 建议 -->
-            <div class="ai-suggest" onclick="doSuggest()">
+            <div class="ai-suggest" onclick="doSuggest()" style="display:none;">
               <div class="ai-suggest-icon"><i class="fa-solid fa-robot"></i></div>
               <div>
-                <div class="ai-suggest-label">✨ AI 建议：插入 Callback</div>
-                <div class="ai-suggest-text">检测到「游客」这个词非常适合在结尾做 Callback 回扣，点击让 AI 生成回扣段落，可以大幅提升节目的整体感。</div>
+                <div class="ai-suggest-label">AI 建议</div>
+                <div class="ai-suggest-text">分析当前真实稿件后生成。</div>
               </div>
               <button style="border:1px solid rgba(155,109,255,0.3);background:rgba(155,109,255,0.1);border-radius:7px;padding:6px 12px;color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;margin-left:8px;font-family:inherit;" onclick="event.stopPropagation();doSuggest()">
                 生成
@@ -2446,19 +2383,18 @@
                 <div class="score-track">
                   <div class="score-fill" id="s3" style="width:0;background:linear-gradient(to right,#F5C842,#FF8C42);"></div>
                 </div>
-                <span class="score-val">76%</span>
+                <span class="score-val">—</span>
               </div>
               <div class="bit-content" style="padding-left:54px;">
                 <div class="bit-num">03</div>
                 <div class="bit-text" contenteditable="true" spellcheck="false">
-                  北京人对方向感的执着，是外地人永远理解不了的。我在北京第一年，跟一个老北京问路，他跟我说：<span class="kw">出门往东，再往南，看见那棵歪脖子树，那儿以前有个邮局</span>——我跟他说，大哥，现在是2015年，邮局已经是一个抽象概念了。
                 </div>
                 <div class="bit-reactions">
-                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">19</b></button>
-                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">8</b></button>
-                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">2</b></button>
+                  <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
                   <span class="reaction-sep"></span>
-                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~55秒</span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
                 </div>
               </div>
             </div>
@@ -2480,19 +2416,18 @@
                 <div class="score-track">
                   <div class="score-fill" id="s4" style="width:0;background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div>
                 </div>
-                <span class="score-val">84%</span>
+                <span class="score-val">—</span>
               </div>
               <div class="bit-content" style="padding-left:54px;">
                 <div class="bit-num">04</div>
                 <div class="bit-text" contenteditable="true" spellcheck="false">
-                  他顿了顿，补充了一句：<span class="kw">"那棵歪脖子树还在的。"</span>
                 </div>
                 <div class="bit-reactions">
-                  <button class="reaction-btn on"><span>😂</span> 大笑 <b style="margin-left:2px;">35</b></button>
-                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">2</b></button>
+                  <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
+                  <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
                   <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
                   <span class="reaction-sep"></span>
-                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~10秒</span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
                 </div>
               </div>
             </div>
@@ -2514,19 +2449,18 @@
                 <div class="score-track">
                   <div class="score-fill" id="s5" style="width:0;background:linear-gradient(to right,#F5C842,#3ECFB0);"></div>
                 </div>
-                <span class="score-val">88%</span>
+                <span class="score-val">—</span>
               </div>
               <div class="bit-content" style="padding-left:54px;">
                 <div class="bit-num">05</div>
                 <div class="bit-text" contenteditable="true" data-ph="继续写这个Bit，或按空格唤起AI…" spellcheck="false">
-                  所以现在我要走了，我去跟房东辞行。房东很感动，拉着我的手说：小李啊，你是我们小区<span class="kw">租金最准时</span>的租客，<span class="kw-purple">走了真可惜</span>。我当时眼眶都湿了——我以为他说的是我这个人。
                 </div>
                 <div class="bit-reactions">
                   <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">0</b></button>
                   <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">0</b></button>
                   <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">0</b></button>
                   <span class="reaction-sep"></span>
-                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ~40秒</span>
+                  <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> —</span>
                 </div>
               </div>
             </div>
@@ -2606,7 +2540,7 @@
           <div class="density-chart">
             <div class="dc-label">
               <span style="color:var(--text-muted);">全场节奏预测</span>
-              <span>平均 8.4/10 <i class="fa-solid fa-arrow-trend-up" style="font-size:10px;margin-left:2px;"></i></span>
+              <span>等待分析 <i class="fa-solid fa-arrow-trend-up" style="font-size:10px;margin-left:2px;"></i></span>
             </div>
             <div class="density-bars" id="densityBars">
               <!-- 由 JS 生成 -->
@@ -2617,51 +2551,51 @@
           <div class="sec-title">观众情绪弧线</div>
           <div class="mood-timeline">
             <div class="mood-seg"><span class="mood-emoji">😐</span>
-              <div class="mood-time">0-2min</div>
-              <div class="mood-val">65</div>
+              <div class="mood-time">等待内容</div>
+              <div class="mood-val">0</div>
             </div>
             <div class="mood-seg"><span class="mood-emoji">😄</span>
-              <div class="mood-time">2-5min</div>
-              <div class="mood-val">78</div>
+              <div class="mood-time">等待分析</div>
+              <div class="mood-val">0</div>
             </div>
             <div class="mood-seg"><span class="mood-emoji">😂</span>
-              <div class="mood-time">5-9min</div>
-              <div class="mood-val">92</div>
+              <div class="mood-time">—</div>
+              <div class="mood-val">0</div>
             </div>
             <div class="mood-seg"><span class="mood-emoji">🤣</span>
-              <div class="mood-time">9-14min</div>
-              <div class="mood-val">97</div>
+              <div class="mood-time">—</div>
+              <div class="mood-val">0</div>
             </div>
             <div class="mood-seg"><span class="mood-emoji">😄</span>
-              <div class="mood-time">14min+</div>
-              <div class="mood-val">82</div>
+              <div class="mood-time">—</div>
+              <div class="mood-val">0</div>
             </div>
           </div>
 
           <div class="sec-title">节目数据</div>
           <div class="metric-grid">
             <div class="m-card">
-              <div class="m-val" style="color:var(--purple);">5</div>
+              <div class="m-val" style="color:var(--purple);">0</div>
               <div class="m-label">段落数</div>
             </div>
             <div class="m-card">
-              <div class="m-val" style="color:var(--gold);">18<span style="font-size:12px;">分</span></div>
+              <div class="m-val" style="color:var(--gold);">0<span style="font-size:12px;">分</span></div>
               <div class="m-label">预计时长</div>
             </div>
             <div class="m-card">
-              <div class="m-val" style="color:var(--teal);">3</div>
+              <div class="m-val" style="color:var(--teal);">0</div>
               <div class="m-label">高峰笑点</div>
             </div>
             <div class="m-card">
-              <div class="m-val" style="color:var(--orange);">8.4</div>
+              <div class="m-val" style="color:var(--orange);">0</div>
               <div class="m-label">笑点密度</div>
             </div>
             <div class="m-card">
-              <div class="m-val" style="color:var(--pink);">62%</div>
+              <div class="m-val" style="color:var(--pink);">0%</div>
               <div class="m-label">完成度</div>
             </div>
             <div class="m-card">
-              <div class="m-val" style="color:var(--text-muted);">2</div>
+              <div class="m-val" style="color:var(--text-muted);">0</div>
               <div class="m-label">Callback</div>
             </div>
           </div>
@@ -2671,34 +2605,10 @@
             <div class="ai-tip" onclick="">
               <div class="ai-tip-icon">🎯</div>
               <div class="ai-tip-body">
-                <div class="ai-tip-title">第4段是本场最强笑点</div>
-                <div class="ai-tip-desc">「那棵歪脖子树还在」这类意外转折往往在现场效果最佳，建议前后给足停顿。</div>
-              </div>
-              <span class="ai-tip-badge" style="background:rgba(62,207,176,0.12);color:var(--teal);">高优</span>
-            </div>
-            <div class="ai-tip" onclick="">
-              <div class="ai-tip-icon">⚠️</div>
-              <div class="ai-tip-body">
-                <div class="ai-tip-title">第3段节奏偏慢</div>
-                <div class="ai-tip-desc">铺垫长度超过预估 30%，建议压缩「问路」的情境描述，直接进入「邮局」这个转折点。</div>
-              </div>
-              <span class="ai-tip-badge" style="background:rgba(255,140,66,0.12);color:var(--orange);">优化</span>
-            </div>
-            <div class="ai-tip" onclick="">
-              <div class="ai-tip-icon">💡</div>
-              <div class="ai-tip-body">
-                <div class="ai-tip-title">缺少开场 Hook</div>
-                <div class="ai-tip-desc">建议在第1段前加一句强力 Hook，先把观众情绪调动起来再铺垫。</div>
+                <div class="ai-tip-title">等待真实稿件</div>
+                <div class="ai-tip-desc">生成或添加有效段落后，AI 才会基于当前内容输出分析建议。</div>
               </div>
               <span class="ai-tip-badge" style="background:rgba(155,109,255,0.12);color:var(--purple);">建议</span>
-            </div>
-            <div class="ai-tip">
-              <div class="ai-tip-icon">🔄</div>
-              <div class="ai-tip-body">
-                <div class="ai-tip-title">Callback 机会</div>
-                <div class="ai-tip-desc">「游客」和「歪脖子树」均适合在结尾做双重 Callback，可以形成完整闭环。</div>
-              </div>
-              <span class="ai-tip-badge" style="background:rgba(245,200,66,0.12);color:var(--gold);">亮点</span>
             </div>
           </div>
 
@@ -2712,7 +2622,7 @@
             <div class="chat-row">
               <div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div>
               <div>
-                <div class="chat-bub ai">你好！我已分析全部5段内容。整体风格偏「北漂情感共鸣」，笑点类型以 Observational + Tagline 为主，建议在中段增加一个自嘲型的 Bit 来制造情感对比，需要我生成示例吗？</div>
+                <div class="chat-bub ai">这是一个空白节目。点击「从0生成」或告诉我一个真实经历，我会按 Premise、Setup、Punchline、Tag、Callback 帮你生成初稿。</div>
                 <div class="chat-acts">
                   <button class="ca-btn ok" onclick="aiReply()"><i class="fa-solid fa-check"></i> 生成示例</button>
                   <button class="ca-btn" onclick="aiReply2()"><i class="fa-solid fa-rotate"></i> 重新分析</button>
@@ -2733,18 +2643,7 @@
         <div class="rp-body" id="rt-words" style="display:none;">
           <div class="sec-title">核心词汇</div>
           <div class="word-cloud">
-            <span class="cloud-word" style="background:rgba(155,109,255,0.15);color:var(--purple);font-size:16px;">北京</span>
-            <span class="cloud-word" style="background:rgba(245,200,66,0.15);color:var(--gold);font-size:20px;">十年</span>
-            <span class="cloud-word" style="background:rgba(255,107,157,0.12);color:var(--pink);font-size:13px;">游客</span>
-            <span class="cloud-word" style="background:rgba(62,207,176,0.12);color:var(--teal);font-size:14px;">房租</span>
-            <span class="cloud-word" style="background:rgba(255,140,66,0.12);color:var(--orange);font-size:18px;">歪脖子树</span>
-            <span class="cloud-word" style="background:rgba(155,109,255,0.1);color:var(--purple);font-size:12px;">导航</span>
-            <span class="cloud-word" style="background:rgba(245,200,66,0.1);color:var(--gold);font-size:13px;">邮局</span>
-            <span class="cloud-word" style="background:rgba(255,77,109,0.12);color:var(--red);font-size:15px;">房东</span>
-            <span class="cloud-word" style="background:rgba(62,207,176,0.1);color:var(--teal);font-size:11px;">北漂</span>
-            <span class="cloud-word" style="background:rgba(255,107,157,0.1);color:var(--pink);font-size:17px;">租金</span>
-            <span class="cloud-word" style="background:rgba(155,109,255,0.12);color:var(--purple);font-size:14px;">方向</span>
-            <span class="cloud-word" style="background:rgba(245,200,66,0.12);color:var(--gold);font-size:12px;">红点</span>
+            <span class="cloud-word" style="background:var(--purple-dim);color:var(--purple);font-size:13px;">等待内容</span>
           </div>
 
           <div class="sec-title" style="margin-top:16px;">情感频率分析</div>
@@ -2753,25 +2652,11 @@
           <div class="sec-title" style="margin-top:16px;">重复词频警告</div>
           <div style="display:flex;flex-direction:column;gap:6px;">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
-              <span style="font-size:12px;color:var(--text-soft);flex:1;">「北京」</span>
+              <span style="font-size:12px;color:var(--text-soft);flex:1;">等待关键词</span>
               <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
                 <div style="width:90%;height:100%;background:var(--red);border-radius:2px;"></div>
               </div>
-              <span style="font-size:11px;font-weight:700;color:var(--red);">9次 ⚠️</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
-              <span style="font-size:12px;color:var(--text-soft);flex:1;">「我」</span>
-              <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
-                <div style="width:70%;height:100%;background:var(--orange);border-radius:2px;"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:var(--orange);">14次</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
-              <span style="font-size:12px;color:var(--text-soft);flex:1;">「十年」</span>
-              <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
-                <div style="width:40%;height:100%;background:var(--teal);border-radius:2px;"></div>
-              </div>
-              <span style="font-size:11px;font-weight:700;color:var(--teal);">4次 ✓</span>
+              <span style="font-size:11px;font-weight:700;color:var(--text-faint);">0次</span>
             </div>
           </div>
         </div>
@@ -2823,13 +2708,13 @@
 
     <!-- ══ 状态栏 ══ -->
     <div class="statusbar">
-      <div class="sb"><i class="fa-solid fa-microphone-lines"></i> 北漂十年·个人脱口秀</div>
-      <div class="sb"><i class="fa-solid fa-list-ol"></i> <b id="bitCount">5</b> 段</div>
-      <div class="sb"><i class="fa-regular fa-clock"></i> 约 <b>18</b> 分钟</div>
-      <div class="sb"><i class="fa-solid fa-face-laugh-squint"></i> 笑点密度 <b style="color:var(--gold);">8.4</b></div>
+      <div class="sb"><i class="fa-solid fa-microphone-lines"></i> 未命名节目</div>
+      <div class="sb"><i class="fa-solid fa-list-ol"></i> <b id="bitCount">0</b> 段</div>
+      <div class="sb"><i class="fa-regular fa-clock"></i> 约 <b>0</b> 分钟</div>
+      <div class="sb"><i class="fa-solid fa-face-laugh-squint"></i> 笑点密度 <b style="color:var(--gold);">0</b></div>
       <div class="sb-r">
         <div class="sb"><i class="fa-solid fa-circle-check" style="color:var(--teal);"></i> 已自动保存</div>
-        <div class="sb" style="border-right:none;">完成度 <b style="color:var(--purple);">62%</b></div>
+        <div class="sb" style="border-right:none;">完成度 <b style="color:var(--purple);">0%</b></div>
       </div>
     </div>
 
@@ -2885,59 +2770,13 @@
       document.addEventListener('DOMContentLoaded', () => {
         // 进度条动画
         setTimeout(() => {
-          [
-            ['s1', 62],
-            ['s2', 91],
-            ['s3', 76],
-            ['s4', 84],
-            ['s5', 88]
-          ].forEach(([id, val]) => {
+          ['s1', 's2', 's3', 's4', 's5'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.style.width = val + '%';
+            if (el) el.style.width = '0%';
           });
         }, 300);
         // 笑点密度柱状图
-        const bars = [{
-            val: 6,
-            label: '开场',
-            color: 'rgba(155,109,255,'
-          },
-          {
-            val: 8,
-            label: 'Bit1',
-            color: 'rgba(62,207,176,'
-          },
-          {
-            val: 9,
-            label: 'Bit2',
-            color: 'rgba(255,140,66,'
-          },
-          {
-            val: 7,
-            label: 'Bit3',
-            color: 'rgba(155,109,255,'
-          },
-          {
-            val: 10,
-            label: 'Bit4',
-            color: 'rgba(245,200,66,'
-          },
-          {
-            val: 5,
-            label: '过渡',
-            color: 'rgba(255,107,157,'
-          },
-          {
-            val: 9,
-            label: 'Bit5',
-            color: 'rgba(62,207,176,'
-          },
-          {
-            val: 8,
-            label: '结尾',
-            color: 'rgba(245,200,66,'
-          },
-        ];
+        const bars = [];
         const barsEl = document.getElementById('densityBars');
         const labelsEl = document.getElementById('densityLabels');
         if (barsEl) {
@@ -2968,7 +2807,7 @@
             data: {
               labels: ['自嘲', '观察', '共情', '转折', '荒诞', '温情'],
               datasets: [{
-                data: [7, 9, 8, 6, 5, 4],
+                data: [0, 0, 0, 0, 0, 0],
                 backgroundColor: 'rgba(155,109,255,0.2)',
                 borderColor: 'rgba(155,109,255,0.8)',
                 borderWidth: 1.5,
@@ -3050,7 +2889,7 @@
         // 用户消息
         const uDiv = document.createElement('div');
         uDiv.className = 'chat-row me fade-in';
-        uDiv.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${val}</div></div>`;
+        uDiv.innerHTML = `<div class="chat-ava me-av"><i class="fa-regular fa-user"></i></div><div><div class="chat-bub me">${val}</div></div>`;
         const tr = document.getElementById('typingRow');
         list.insertBefore(uDiv, tr);
         tr.style.display = 'flex';
@@ -3059,8 +2898,8 @@
           tr.style.display = 'none';
           const replies = [
             `好问题！根据当前稿件分析，${val.slice(0,10)}这部分的关键在于"Rule of Three"技法——前两个段落建立了节奏，第三段可以在意料之外打破观众预期。要我为你生成一个具体的示例吗？`,
-            `我注意到你的稿件中「北京」和「游客」形成了很好的对照，如果在结尾再次呼应「游客」这个身份，用一句反转收尾，效果会非常强。要我起草一下结尾段落吗？`,
-            `从你目前5段的结构来看，节奏上有一个潜在的问题：第3、4段连续两段都是「观察类」，中间缺少一个自嘲型的情感过渡，建议插入一个更私人化的段落。我可以帮你生成。`,
+            `我建议先找出当前稿件里反复出现的关键词，把它变成结尾 Callback。要我基于现有段落起草一下吗？`,
+            `从结构看，连续观察类段落之间最好插入一个更私人化的自嘲段落，让观众从看热闹切换到共情。我可以帮你生成。`,
           ];
           const r = replies[Math.floor(Math.random() * replies.length)];
           const aiDiv = document.createElement('div');
@@ -3077,7 +2916,7 @@
       }
 
       function aiReply() {
-        rpFill('帮我生成一段自嘲型 Bit，主题关于第一次在北京面试');
+        rpFill('帮我生成一段自嘲型 Bit，主题来自当前稿件里最有冲突的经历');
         rpSend();
       }
 
@@ -3121,7 +2960,7 @@
       }
 
       function doSuggest() {
-        rpFill('请帮我生成一个 Callback 段落，回扣「游客」这个关键词作为结尾');
+        rpFill('请帮我根据当前稿件里的关键词生成一个 Callback 结尾段落');
         document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('on'));
         document.querySelectorAll('.rp-tab')[1].classList.add('on');
         ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(t => {
@@ -3504,8 +3343,8 @@
           };
 
           window.doSuggest = function doSuggestEnhanced() {
-            const html = '后来我才明白，北京不是不留我。北京只是很认真地给我办了一张<span class="kw">十年游客年卡</span>。唯一的会员权益是：每次迷路，都能看到那棵歪脖子树还在。';
-            sendAiPrompt('请帮我生成一个 Callback 段落，回扣「游客」这个关键词作为结尾', {
+            const html = '所以讲到最后我才发现，开头那个问题根本没有解决。它只是换了个姿势回来，像生活特别懂脱口秀，还知道什么叫 <span class="kw">Callback</span>。';
+            sendAiPrompt('请帮我根据当前稿件里的关键词生成一个 Callback 结尾段落', {
               insertHtml: html,
               type: 'CALLBACK'
             });
@@ -3526,8 +3365,8 @@
           };
 
           window.aiReply = function aiReplyEnhanced() {
-            sendAiPrompt('帮我生成一段自嘲型 Bit，主题关于第一次在北京面试', {
-              insertText: '我第一次在北京面试，紧张到提前一个小时到楼下。保安问我找谁，我说找未来。保安看了我一眼，说：未来在对面写字楼。'
+            sendAiPrompt('帮我生成一段自嘲型 Bit，主题来自当前稿件里最有冲突的经历', {
+              insertText: '我最开始以为这是一次普通经历，后来发现它更像生活给我安排的开放麦：观众只有我一个，尴尬也只有我一个人负责。'
             });
           };
 
@@ -3616,10 +3455,6 @@
 
         function deleteBit(block) {
           if (!block) return;
-          if (document.querySelectorAll('.bit-block').length <= 1) {
-            showToast('至少保留一个段落');
-            return;
-          }
           block.remove();
           updateBitNumbers();
           updateStats();
@@ -3631,7 +3466,7 @@
           if (!block) return;
           const text = block.querySelector('.bit-text')?.innerText.trim() || '';
           sendAiPrompt(`请优化这段 Bit：${text}`, {
-            insertText: `${text} 但最荒诞的是，我以为这是生活给我的考验，后来发现这只是北京给我的续租提醒。`
+            insertText: `${text} 但最荒诞的是，我以为这是生活给我的考验，后来发现这只是生活给我的自动续费提醒。`
           });
         }
 
@@ -3652,15 +3487,15 @@
 
         function buildAiReply(prompt, action) {
           if (prompt.includes('Callback') || prompt.includes('回扣')) {
-            return { text: '我建议用「游客」做身份回扣，再用「歪脖子树」做场景回扣，结尾会更完整。' };
+            return { text: '我建议回扣开头的核心关键词，再把中段最具体的场景拿回来，结尾会更完整。' };
           }
           if (prompt.includes('哪里最弱') || prompt.includes('弱点')) {
             return { text: '当前最弱的是第3段：铺垫信息略多，建议提前出现「邮局」这个转折词，并缩短问路过程。' };
           }
           if (prompt.includes('Hook') || prompt.includes('开场')) {
-            action.insertText = '我决定离开北京那天，第一反应不是难过，是终于不用再假装自己听得懂中介说的“南北通透”了。';
+            action.insertText = '我决定开始讲这件事的时候，第一反应不是勇敢，是终于可以把那次尴尬合理包装成创作素材了。';
             action.type = 'SETUP';
-            return { text: '我生成了一个更直接的开场 Hook，可以先抛出“离开北京”的反常情绪，再进入十年北漂。' };
+            return { text: '我生成了一个更直接的开场 Hook，可以先抛出反常情绪，再进入具体经历。' };
           }
           return { text: '我给你一个可执行方向：压缩铺垫，把关键词放到句尾，并在下一句用更私人化的自嘲承接。' };
         }
@@ -3673,7 +3508,7 @@
           const row = document.createElement('div');
           row.className = role === 'me' ? 'chat-row me fade-in' : 'chat-row fade-in';
           if (role === 'me') {
-            row.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
+            row.innerHTML = `<div class="chat-ava me-av"><i class="fa-regular fa-user"></i></div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
           } else {
             const actionHtml = (action.insertText || action.insertHtml) ?
               `<div class="chat-acts"><button class="ca-btn ok" data-insert-ai="1"><i class="fa-solid fa-check"></i> 插入为新段落</button><button class="ca-btn" data-copy-ai="1"><i class="fa-regular fa-copy"></i> 复制建议</button></div>` :
@@ -3937,7 +3772,7 @@
       (() => {
         const VERSION_KEY = 'riffmaster.prototype.versions.v1';
         const DRAFT_KEY = 'riffmaster.prototype.v1';
-        const STOP_WORDS = new Set(['我', '你', '他', '她', '它', '的', '了', '是', '在', '和', '就', '都', '也', '但', '又', '说', '这', '那', '一个', '我们', '你们', '北京']);
+        const STOP_WORDS = new Set(['我', '你', '他', '她', '它', '的', '了', '是', '在', '和', '就', '都', '也', '但', '又', '说', '这', '那', '一个', '我们', '你们']);
         let analysisTimer = null;
 
         function initCreationLoopFeatures() {
@@ -4269,7 +4104,7 @@
             const dot = document.createElement('span');
             dot.dataset.notificationCount = '1';
             dot.style.cssText = 'position:absolute;top:3px;right:3px;min-width:14px;height:14px;border-radius:8px;background:var(--red);color:white;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1px solid var(--bg-deep);';
-            dot.textContent = '3';
+            dot.textContent = '0';
             bell.appendChild(dot);
           }
           bell.addEventListener('click', openNotificationModal);
@@ -4312,12 +4147,12 @@
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                 <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;">
                   <div style="font-size:12px;font-weight:800;color:var(--purple);margin-bottom:10px;">协作者</div>
-                  ${['李 · Owner · 在线', '王 · Editor · 5分钟前', '陈 · Commenter · 昨天'].map(item => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--text-soft);font-size:12px;"><span style="width:8px;height:8px;background:var(--teal);border-radius:50%;"></span>${item}</div>`).join('')}
+                  ${['用户 · Owner · 在线', '协作者 · Editor · 5分钟前', '评论者 · Commenter · 昨天'].map(item => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--text-soft);font-size:12px;"><span style="width:8px;height:8px;background:var(--teal);border-radius:50%;"></span>${item}</div>`).join('')}
                   <button class="ca-btn ok" data-invite="1"><i class="fa-solid fa-user-plus"></i> 复制邀请链接</button>
                 </div>
                 <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;">
                   <div style="font-size:12px;font-weight:800;color:var(--gold);margin-bottom:10px;">当前待办</div>
-                  <div style="font-size:12px;color:var(--text-muted);line-height:1.8;">1. 压缩第3段铺垫<br>2. 给第1段增加 Hook<br>3. 结尾回扣「游客」</div>
+                  <div style="font-size:12px;color:var(--text-muted);line-height:1.8;">暂无固定待办。AI 分析后会根据当前稿件生成。</div>
                 </div>
               </div>
               <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:14px;">
@@ -4348,7 +4183,7 @@
           const list = document.getElementById('commentList');
           const row = document.createElement('div');
           row.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-size:12px;color:var(--text-soft);';
-          row.innerHTML = `<b style="color:var(--gold);">李</b>：${escapeHtml(value)}<div style="font-size:10px;color:var(--text-faint);margin-top:4px;">刚刚 · 已绑定当前段落</div>`;
+          row.innerHTML = `<b style="color:var(--gold);">用户</b>：${escapeHtml(value)}<div style="font-size:10px;color:var(--text-faint);margin-top:4px;">刚刚 · 已绑定当前段落</div>`;
           list.prepend(row);
           addNotification('新增协作评论', value, '协作');
           showToast('评论已添加');
@@ -4366,7 +4201,7 @@
               <div class="modal-title">通知中心</div>
               <div class="modal-sub">AI、保存、协作和排练事件会集中出现在这里</div>
               <div style="display:flex;flex-direction:column;gap:8px;">
-                ${notifications.map(item => `
+                ${notifications.length ? notifications.map(item => `
                   <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:11px 12px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span style="font-size:10px;font-weight:800;color:var(--purple);background:var(--purple-dim);border-radius:20px;padding:2px 7px;">${escapeHtml(item.type)}</span>
@@ -4375,7 +4210,7 @@
                     <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:5px;">${escapeHtml(item.body)}</div>
                     <div style="font-size:10px;color:var(--text-faint);margin-top:5px;">${new Date(item.createdAt).toLocaleString()}</div>
                   </div>
-                `).join('')}
+                `).join('') : '<div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:18px 12px;text-align:center;color:var(--text-muted);font-size:12px;">暂无通知</div>'}
               </div>
               <button class="tb-btn btn-border" data-clear-notifications="1" style="margin-top:14px;width:100%;justify-content:center;">清空通知</button>
             </div>`;
@@ -4398,7 +4233,7 @@
           menu.style.cssText = `position:fixed;top:${rect.bottom + 8}px;right:${window.innerWidth - rect.right}px;width:210px;background:var(--bg-card);border:1px solid var(--border-bright);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.5);z-index:9200;padding:8px;`;
           menu.innerHTML = `
             <div style="padding:10px;border-bottom:1px solid var(--border);margin-bottom:6px;">
-              <div style="font-size:13px;font-weight:800;color:var(--text-white);">李同学</div>
+              <div style="font-size:13px;font-weight:800;color:var(--text-white);">用户</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">单人 MVP 模式</div>
             </div>
             ${[
@@ -4658,18 +4493,17 @@
         function readNotifications() {
           try {
             const saved = JSON.parse(localStorage.getItem('riffmaster.notifications.v1') || '[]');
-            if (saved.length) return saved;
+            return Array.isArray(saved) ? saved : [];
           } catch {}
-          return [
-            { title: 'AI 分析完成', body: '第3段节奏偏慢，建议压缩铺垫。', type: 'AI', createdAt: new Date().toISOString() },
-            { title: '自动保存成功', body: '当前稿件已保存到本地草稿。', type: '保存', createdAt: new Date().toISOString() },
-            { title: 'Callback 机会', body: '「游客」适合在结尾做回扣。', type: '建议', createdAt: new Date().toISOString() }
-          ];
+          return [];
         }
 
         function updateNotificationDot() {
           const dot = document.querySelector('[data-notification-count]');
-          if (dot) dot.textContent = String(readNotifications().length);
+          if (!dot) return;
+          const count = readNotifications().length;
+          dot.textContent = String(count);
+          dot.style.display = count ? 'flex' : 'none';
         }
 
         function removeModal(id) {
@@ -4750,8 +4584,8 @@
                   <div style="font-size:12px;font-weight:900;color:var(--gold);margin-bottom:12px;">核心主题</div>
                   <div style="display:flex;align-items:center;justify-content:center;height:180px;border-radius:50%;background:radial-gradient(circle, var(--purple-dim), transparent 68%);border:1px solid var(--border);">
                     <div style="text-align:center;">
-                      <div style="font-size:26px;font-weight:900;color:var(--text-white);">北漂十年</div>
-                      <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">个人经历 · 城市身份 · 房租</div>
+                      <div style="font-size:26px;font-weight:900;color:var(--text-white);">未命名节目</div>
+                      <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">等待真实稿件数据</div>
                     </div>
                   </div>
                   <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;">
@@ -4863,7 +4697,7 @@
           modal.addEventListener('click', event => {
             if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
             if (event.target.closest('[data-fill-demo]')) {
-              document.getElementById('transcriptInput').value = '我第一次来北京，觉得地铁特别像人生。你以为自己有方向，其实只是被人流推着走。\\n\\n后来我发现，北京最温柔的地方是导航。它从来不说你错了，它只说：正在为你重新规划路线。';
+              document.getElementById('transcriptInput').value = '';
             }
             if (event.target.closest('[data-import-transcript]')) {
               importTranscript();
@@ -4935,13 +4769,13 @@
           try {
             return {
               targetMinutes: '18',
-              style: '北漂共情 + 观察喜剧',
-              model: 'mock-riff-master',
+              style: '观察喜剧 + 自嘲 + Callback',
+              model: 'openai-compatible',
               autosave: true,
               ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
             };
           } catch {
-            return { targetMinutes: '18', style: '北漂共情 + 观察喜剧', model: 'mock-riff-master', autosave: true };
+            return { targetMinutes: '8', style: '观察喜剧 + 自嘲 + Callback', model: 'openai-compatible', autosave: true };
           }
         }
 
@@ -4977,7 +4811,7 @@
         function estimateBitScore(text) {
           let score = 5;
           if (/但|结果|后来|真正|没想到|以为/.test(text)) score += 1.5;
-          if (/房租|游客|歪脖子树|导航|北京/.test(text)) score += 1;
+          if (/回扣|开头|结尾|尴尬|离谱|荒诞|反转/.test(text)) score += 1;
           if (text.length > 35 && text.length < 140) score += 1;
           if (text.length > 180) score -= 1.5;
           return Math.max(1, Math.min(10, Number(score.toFixed(1))));
@@ -5226,7 +5060,7 @@
               <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
               <div class="modal-title">全文搜索</div>
               <div class="modal-sub">搜索当前稿件内容并快速定位段落</div>
-              <input id="globalSearchInput" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;color:var(--text-white);padding:10px 12px;outline:none;margin-bottom:12px;" placeholder="输入关键词，例如：游客、房租、北京">
+              <input id="globalSearchInput" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;color:var(--text-white);padding:10px 12px;outline:none;margin-bottom:12px;" placeholder="输入当前稿件里的关键词">
               <div id="globalSearchResults" style="display:flex;flex-direction:column;gap:8px;"></div>
             </div>`;
           document.body.appendChild(modal);
@@ -5424,7 +5258,7 @@
         function estimateScore(text) {
           let score = 58;
           if (/但|结果|后来|真正|没想到|以为/.test(text)) score += 14;
-          if (/房租|游客|北京|导航|歪脖子树/.test(text)) score += 10;
+          if (/回扣|开头|结尾|尴尬|离谱|荒诞|反转/.test(text)) score += 10;
           if (text.length > 35 && text.length < 150) score += 8;
           if (text.length > 190) score -= 12;
           return Math.max(35, Math.min(96, score));
@@ -5693,9 +5527,9 @@
           const title = tip.querySelector('.ai-tip-title')?.textContent.trim() || 'AI 建议';
           const desc = tip.querySelector('.ai-tip-desc')?.textContent.trim() || '';
           if (title.includes('Hook')) {
-            window.addBit?.({ type: 'SETUP', html: '我决定离开北京那天，第一反应不是难过，是终于不用再假装自己听得懂中介说的“南北通透”了。', score: '82%', duration: '~28秒' });
+            window.addBit?.({ type: 'SETUP', html: '我决定开始讲这件事的时候，第一反应不是勇敢，是终于可以把那次尴尬合理包装成创作素材了。', score: '82%', duration: '~28秒' });
           } else if (title.includes('Callback')) {
-            window.addBit?.({ type: 'CALLBACK', html: '后来我发现，北京最像一个很贵的开放式景区。我买了十年门票，最后工作人员说：游客您好，出口在那棵歪脖子树旁边。', score: '88%', duration: '~35秒' });
+            window.addBit?.({ type: 'CALLBACK', html: '所以讲到最后我才发现，开头那个问题根本没有解决。它只是换了个姿势回来，像生活特别懂脱口秀，还知道什么叫 Callback。', score: '88%', duration: '~35秒' });
           } else if (typeof window.rpFill === 'function') {
             window.rpFill(`请帮我采纳这条建议：${title}。${desc}`);
             document.querySelectorAll('.rp-tab')[1]?.click();
@@ -6261,34 +6095,6 @@
             title: '空白节目',
             desc: '从 1 个空白 Setup 开始',
             bits: [{ type: 'SETUP', html: '', score: '—', duration: '—', reactions: { laugh: 0, smile: 0, flat: 0 } }]
-          },
-          {
-            id: 'city',
-            title: '城市生活观察',
-            desc: '适合北漂、租房、通勤主题',
-            bits: [
-              { type: 'SETUP', html: '我发现一个人在大城市待久了，最先变化的不是梦想，是对通勤时间的计量单位。', score: '72%', duration: '~32秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
-              { type: 'PUNCHLINE', html: '以前我说“很远”是十公里，现在我说“很远”是地铁换乘要走出站。', score: '84%', duration: '~28秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
-              { type: 'CALLBACK', html: '所以我不是离不开这座城市，我只是还没找到一个不用换乘的人生出口。', score: '80%', duration: '~30秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
-            ]
-          },
-          {
-            id: 'workplace',
-            title: '职场黑话大赏',
-            desc: '适合会议、老板、汇报主题',
-            bits: [
-              { type: 'SETUP', html: '我刚上班的时候，以为职场最难的是工作。后来发现最难的是听懂工作。', score: '76%', duration: '~30秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
-              { type: 'PUNCHLINE', html: '领导说“这个事你闭环一下”，我当时特别紧张，因为我连开环在哪儿都没找到。', score: '88%', duration: '~34秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
-            ]
-          },
-          {
-            id: 'relationship',
-            title: '相亲与关系',
-            desc: '适合亲密关系、自嘲、家庭催婚',
-            bits: [
-              { type: 'SETUP', html: '我妈给我安排相亲的时候，语气特别像产品经理：这次需求很明确，年底上线。', score: '78%', duration: '~31秒', reactions: { laugh: 0, smile: 0, flat: 0 } },
-              { type: 'TAGLINE', html: '我说妈，感情不能赶进度。她说你放心，我已经排期延期三十年了。', score: '86%', duration: '~29秒', reactions: { laugh: 0, smile: 0, flat: 0 } }
-            ]
           }
         ];
 
@@ -6314,7 +6120,7 @@
           const draft = readCurrentDraft();
           const show = {
             id: `show-${Date.now()}`,
-            title: draft.title || document.querySelector('.show-title-input')?.value || '北漂十年：你好，北京，我要走了',
+            title: draft.title || document.querySelector('.show-title-input')?.value || '未命名节目',
             topic: '个人经历',
             status: '草稿进行中',
             updatedAt: new Date().toISOString(),
@@ -6851,7 +6657,7 @@
         function buildReadinessChecks() {
           const title = document.querySelector('.show-title-input')?.value.trim() || '';
           const bits = getBits();
-          const callbacks = bits.filter(bit => /CALLBACK|回扣/.test(bit.type) || /回到|开头|游客|歪脖子树/.test(bit.text));
+          const callbacks = bits.filter(bit => /CALLBACK|回扣/.test(bit.type) || /回到|开头|结尾|最后/.test(bit.text));
           const longBits = bits.filter(bit => bit.text.length > 180);
           const strongScores = Array.from(document.querySelectorAll('.score-val')).filter(el => Number(el.textContent.replace('%', '')) >= 80);
           return [
@@ -6912,20 +6718,36 @@
           bindAnalysisEntrypoints();
           bindLiveAnalysis();
           bindTipActions();
-          if (lastAnalysis) updateAnalysisPanel(lastAnalysis);
-          setTimeout(() => runFullAnalysis({ silent: true }), 700);
+          resetAnalysisPanel();
+          if (hasMeaningfulBits(collectBits()) && lastAnalysis) updateAnalysisPanel(lastAnalysis);
+          if (hasMeaningfulBits(collectBits())) {
+            setTimeout(() => runFullAnalysis({ silent: true }), 700);
+          }
           window.runRiffAiAnalysis = runFullAnalysis;
         }
 
         function addAnalyzeEntryButton() {
-          const head = document.querySelector('.rp-head');
-          if (!head || head.querySelector('[data-run-ai-analysis]')) return;
+          const actions = ensureAIHeaderActions();
+          if (!actions || actions.querySelector('[data-run-ai-analysis]')) return;
           const button = document.createElement('button');
           button.dataset.runAiAnalysis = '1';
-          button.style.cssText = 'border:1px solid rgba(155,109,255,.35);background:rgba(155,109,255,.12);color:var(--purple);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;';
+          button.className = 'rp-ai-action';
+          button.title = '重新分析当前稿件';
           button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 重新分析';
           button.addEventListener('click', () => runFullAnalysis({ openReport: true }));
-          head.appendChild(button);
+          actions.appendChild(button);
+        }
+
+        function ensureAIHeaderActions() {
+          const head = document.querySelector('.rp-head');
+          if (!head) return null;
+          let actions = head.querySelector('.rp-ai-actions');
+          if (!actions) {
+            actions = document.createElement('div');
+            actions.className = 'rp-ai-actions';
+            head.appendChild(actions);
+          }
+          return actions;
         }
 
         function bindAnalysisEntrypoints() {
@@ -6987,8 +6809,10 @@
 
         async function runFullAnalysis(options = {}) {
           const bits = collectBits();
-          if (!bits.length) {
-            showToast('请先添加至少一个 Bit');
+          if (!hasMeaningfulBits(bits)) {
+            resetAnalysisPanel();
+            localStorage.removeItem(ANALYSIS_CACHE_KEY);
+            if (!options.silent) showToast('请先添加一段有效内容，再进行 AI 分析');
             return null;
           }
 
@@ -7028,6 +6852,76 @@
           updateWordPanel(analysis);
           updateEmotionChart(analysis);
           updateInlineSuggestion(analysis);
+        }
+
+        function resetAnalysisPanel() {
+          const barsEl = document.getElementById('densityBars');
+          const labelsEl = document.getElementById('densityLabels');
+          if (barsEl) barsEl.innerHTML = '';
+          if (labelsEl) labelsEl.innerHTML = '';
+
+          const averageLabel = document.querySelector('.density-chart .dc-label span:last-child');
+          if (averageLabel) {
+            averageLabel.innerHTML = '等待分析 <i class="fa-solid fa-arrow-trend-up" style="font-size:10px;margin-left:2px;"></i>';
+          }
+
+          const timeline = document.querySelector('.mood-timeline');
+          if (timeline) {
+            timeline.innerHTML = `
+              <div class="mood-seg"><span class="mood-emoji">😐</span><div class="mood-time">等待内容</div><div class="mood-val">0</div></div>
+              <div class="mood-seg"><span class="mood-emoji">😐</span><div class="mood-time">等待分析</div><div class="mood-val">0</div></div>
+              <div class="mood-seg"><span class="mood-emoji">😐</span><div class="mood-time">—</div><div class="mood-val">0</div></div>
+            `;
+          }
+
+          const values = document.querySelectorAll('.metric-grid .m-val');
+          if (values.length >= 6) {
+            values[0].textContent = '0';
+            values[1].innerHTML = '0<span style="font-size:12px;">分</span>';
+            values[2].textContent = '0';
+            values[3].textContent = '0';
+            values[4].textContent = '0%';
+            values[5].textContent = '0';
+          }
+          document.querySelectorAll('.laugh-val').forEach(el => { el.textContent = '0'; });
+          document.querySelectorAll('.sp-fill').forEach(el => { el.style.width = '0%'; });
+
+          const list = document.querySelector('.ai-tip-list');
+          if (list) {
+            list.innerHTML = `
+              <div class="ai-tip">
+                <div class="ai-tip-icon">🎯</div>
+                <div class="ai-tip-body">
+                  <div class="ai-tip-title">等待真实稿件</div>
+                  <div class="ai-tip-desc">生成或添加有效段落后，AI 才会基于当前内容输出分析建议。</div>
+                </div>
+                <span class="ai-tip-badge" style="background:rgba(155,109,255,0.12);color:var(--purple);">建议</span>
+              </div>`;
+          }
+
+          const cloud = document.querySelector('.word-cloud');
+          if (cloud) cloud.innerHTML = '<span class="cloud-word" style="background:var(--purple-dim);color:var(--purple);font-size:13px;">等待内容</span>';
+          const repeatedTitle = Array.from(document.querySelectorAll('#rt-words .sec-title')).find(el => el.textContent.includes('重复词频'));
+          const repeatedBox = repeatedTitle?.nextElementSibling;
+          if (repeatedBox) {
+            repeatedBox.innerHTML = `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+                <span style="font-size:12px;color:var(--text-soft);flex:1;">等待关键词</span>
+                <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;"><div style="width:0;height:100%;background:var(--teal);border-radius:2px;"></div></div>
+                <span style="font-size:11px;font-weight:700;color:var(--text-faint);">0次</span>
+              </div>`;
+          }
+
+          const inline = document.querySelector('.ai-suggest');
+          if (inline) inline.style.display = 'none';
+
+          const sub = document.querySelector('.rp-sub');
+          if (sub) sub.textContent = '等待真实稿件';
+        }
+
+        function hasMeaningfulBits(bits) {
+          const totalTextLength = bits.reduce((sum, bit) => sum + bit.text.length, 0);
+          return bits.length > 0 && totalTextLength >= 20;
         }
 
         function updateDensityChart(analysis) {
@@ -7102,6 +6996,18 @@
         function updateTipList(analysis) {
           const list = document.querySelector('.ai-tip-list');
           if (!list) return;
+          if (!analysis.suggestions.length) {
+            list.innerHTML = `
+              <div class="ai-tip">
+                <div class="ai-tip-icon">🎯</div>
+                <div class="ai-tip-body">
+                  <div class="ai-tip-title">暂无建议</div>
+                  <div class="ai-tip-desc">当前内容还不足以生成可靠分析。</div>
+                </div>
+                <span class="ai-tip-badge" style="background:rgba(155,109,255,0.12);color:var(--purple);">建议</span>
+              </div>`;
+            return;
+          }
           const iconMap = {
             strength: '🎯',
             optimize: '⚠️',
@@ -7198,10 +7104,14 @@
 
         function updateInlineSuggestion(analysis) {
           const box = document.querySelector('.ai-suggest');
-          if (!box || !analysis.suggestions.length) return;
+          if (!box || !analysis.suggestions.length) {
+            if (box) box.style.display = 'none';
+            return;
+          }
           const callback = analysis.suggestions.find(item => item.type === 'callback') || analysis.suggestions[0];
           const label = box.querySelector('.ai-suggest-label');
           const text = box.querySelector('.ai-suggest-text');
+          box.style.display = '';
           if (label) label.textContent = `✨ AI 建议：${callback.title}`;
           if (text) text.textContent = callback.description;
         }
@@ -7344,7 +7254,7 @@
               durationSeconds: Math.max(10, Math.round(bit.text.length / 4)),
               keywords: extractKeywords(bit.text).slice(0, 5),
               issues: bit.text.length > 170 ? ['铺垫偏长'] : [],
-              strengths: /但|结果|没想到|最后|游客|房租/.test(bit.text) ? ['有反转或回扣线索'] : []
+              strengths: /但|结果|没想到|最后|回扣|反转/.test(bit.text) ? ['有反转或回扣线索'] : []
             };
           });
           const counts = countKeywords(payload.bits.map(bit => bit.text).join(' '));
@@ -7356,7 +7266,7 @@
             title: payload.title,
             averageLaughDensity: avg,
             completionRate: Math.min(100, Math.round(payload.bits.filter(bit => bit.text.length > 20).length / Math.max(payload.bits.length, 1) * 80 + 12)),
-            callbackCount: payload.bits.filter(bit => /回到|开头|游客|歪脖子树|最后/.test(bit.text)).length,
+            callbackCount: payload.bits.filter(bit => /回到|开头|结尾|最后|回扣/.test(bit.text)).length,
             peakLaughCount: analyzedBits.filter(bit => bit.score >= 8).length,
             analyzedBits,
             densityBars: analyzedBits.map(bit => ({ label: `Bit${bit.order}`, value: bit.score, color: bit.score >= 8 ? 'gold' : bit.score >= 6.5 ? 'purple' : 'orange' })),
@@ -7368,11 +7278,11 @@
             repeatedWords: Object.entries(counts).filter(([, count]) => count >= 3).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([word, count]) => ({ word, count, severity: count >= 8 ? 'warning' : count >= 5 ? 'notice' : 'ok' })),
             emotionRadar: [
               { label: '自嘲', value: detectScore(payload.bits, ['我', '自己', '尴尬']) },
-              { label: '观察', value: detectScore(payload.bits, ['发现', '北京', '地铁']) },
+              { label: '观察', value: detectScore(payload.bits, ['发现', '生活', '日常']) },
               { label: '共情', value: detectScore(payload.bits, ['你们', '我们', '大家']) },
               { label: '转折', value: detectScore(payload.bits, ['但', '结果', '没想到']) },
-              { label: '荒诞', value: detectScore(payload.bits, ['离谱', '抽象', '游客']) },
-              { label: '温情', value: detectScore(payload.bits, ['妈妈', '房东', '感动']) }
+              { label: '荒诞', value: detectScore(payload.bits, ['离谱', '抽象', '荒诞']) },
+              { label: '温情', value: detectScore(payload.bits, ['家人', '朋友', '感动']) }
             ],
             suggestions: [
               strongest && { type: 'strength', priority: '高优', title: `第${strongest.order}段是当前强笑点`, description: '建议保留核心句，并在演出时给足停顿。', relatedOrder: strongest.order },
@@ -7386,7 +7296,7 @@
         function estimateScore(text) {
           let score = 4.8;
           if (/但|结果|后来|没想到|最后|真正/.test(text)) score += 1.4;
-          if (/游客|房租|歪脖子树|导航|北京/.test(text)) score += 1.1;
+          if (/回扣|开头|结尾|尴尬|离谱|荒诞|反转/.test(text)) score += 1.1;
           if (/[？?]/.test(text)) score += 0.4;
           if (text.length >= 35 && text.length <= 150) score += 1;
           if (text.length > 180) score -= 1.2;
@@ -7470,6 +7380,7 @@
           overrideChatActions();
           bindCapturedAIButtons();
           bindCurrentEditingTracker();
+          addAIWorkflowButton();
           addAIHistoryButton();
           window.riffAiAction = runAIAction;
         }
@@ -7487,21 +7398,21 @@
             const input = document.getElementById('mainInput');
             const prompt = input?.value.trim();
             if (!prompt) return showToast('先输入一个想法');
-            runAIAction('expand', `请把这个想法扩写成完整段落：${prompt}`, {
+            runAIAction('expand', `按脱口秀写法扩写这个想法：先明确 Premise，再写 Setup，最后给一个句尾 Punchline。素材：${prompt}`, {
               selectedText: prompt,
               preferredType: currentSelectedType()
             });
           };
 
           window.doSuggest = function doSuggestWithRealAI() {
-            const keywords = topKeywords(collectShow().bits.map(bit => bit.text).join(' ')).slice(0, 3).join('、') || '游客、北京、房租';
-            runAIAction('callback', `请生成一个 Callback 段落，回扣这些关键词：${keywords}`, {
+            const keywords = topKeywords(collectShow().bits.map(bit => bit.text).join(' ')).slice(0, 3).join('、') || '开头、场景、核心态度';
+            runAIAction('callback', `请生成一个可演出的 Callback 段落，回扣这些关键词：${keywords}。要求：先误导，再回扣身份或场景，最后一句最短最狠。`, {
               preferredType: 'CALLBACK'
             });
           };
 
           window.aiReply = function aiReplyWithRealAI() {
-            runAIAction('expand', '帮我生成一段自嘲型 Bit，主题关于第一次在北京面试', {
+            runAIAction('expand', '帮我生成一段自嘲型 Bit，主题来自当前稿件里最有冲突的经历', {
               preferredType: 'SELF_DEPRECATION'
             });
           };
@@ -7611,7 +7522,7 @@
           const row = document.createElement('div');
           row.className = role === 'me' ? 'chat-row me fade-in' : 'chat-row fade-in';
           if (role === 'me') {
-            row.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
+            row.innerHTML = `<div class="chat-ava me-av"><i class="fa-regular fa-user"></i></div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
           } else {
             const canInsert = action.insertText || action.insertHtml;
             const actions = canInsert
@@ -7636,14 +7547,144 @@
         }
 
         function addAIHistoryButton() {
-          const head = document.querySelector('.rp-head');
-          if (!head || head.querySelector('[data-ai-history-entry]')) return;
+          const actions = ensureAIHeaderActions();
+          if (!actions || actions.querySelector('[data-ai-history-entry]')) return;
           const button = document.createElement('button');
           button.dataset.aiHistoryEntry = '1';
-          button.style.cssText = 'border:1px solid rgba(245,200,66,.35);background:rgba(245,200,66,.1);color:var(--gold);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;';
+          button.className = 'rp-ai-action gold';
+          button.title = '查看 AI 生成历史';
           button.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> AI 历史';
           button.addEventListener('click', openAIHistoryModal);
-          head.appendChild(button);
+          actions.appendChild(button);
+        }
+
+        function addAIWorkflowButton() {
+          const actions = ensureAIHeaderActions();
+          if (!actions || actions.querySelector('[data-ai-workflow-entry]')) return;
+          const button = document.createElement('button');
+          button.dataset.aiWorkflowEntry = '1';
+          button.className = 'rp-ai-action';
+          button.title = '打开脱口秀写作流程';
+          button.innerHTML = '<i class="fa-solid fa-route"></i> 写作流程';
+          button.addEventListener('click', openAIWorkflowModal);
+          actions.appendChild(button);
+        }
+
+        function ensureAIHeaderActions() {
+          const head = document.querySelector('.rp-head');
+          if (!head) return null;
+          let actions = head.querySelector('.rp-ai-actions');
+          if (!actions) {
+            actions = document.createElement('div');
+            actions.className = 'rp-ai-actions';
+            head.appendChild(actions);
+          }
+          return actions;
+        }
+
+        function openAIWorkflowModal() {
+          removeModal('aiWorkflowModal');
+          const bit = getWorkflowBit();
+          const modal = document.createElement('div');
+          modal.id = 'aiWorkflowModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:820px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">AI 脱口秀写作流程</div>
+              <div class="modal-sub">按 Premise → Angle → Setup → Punchline → Tag → Callback → Polish 的顺序打磨，而不是一次性瞎生成</div>
+              <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:900;color:var(--text-faint);margin-bottom:6px;">当前素材</div>
+                <div style="font-size:12px;line-height:1.65;color:var(--text-soft);">${escapeHtml(bit.text || '先选中或点击一个段落，也可以在快速输入框写一个想法。')}</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+                ${workflowSteps().map(step => `
+                  <button data-workflow-action="${step.action}" style="text-align:left;border:1px solid var(--border);background:var(--bg-raised);border-radius:12px;padding:12px;color:var(--text-soft);cursor:pointer;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                      <span style="width:24px;height:24px;border-radius:8px;background:${step.bg};color:${step.color};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">${step.no}</span>
+                      <b style="font-size:13px;color:var(--text-white);">${escapeHtml(step.title)}</b>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);line-height:1.5;">${escapeHtml(step.desc)}</div>
+                  </button>
+                `).join('')}
+              </div>
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <button class="tb-btn btn-purple" data-workflow-full="1"><i class="fa-solid fa-wand-magic-sparkles"></i> 从素材生成完整 Bit</button>
+                <button class="tb-btn btn-border" data-close="1">稍后再写</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const action = event.target.closest('[data-workflow-action]')?.dataset.workflowAction;
+            if (action) {
+              modal.remove();
+              runWorkflowStep(action);
+            }
+            if (event.target.closest('[data-workflow-full]')) {
+              modal.remove();
+              runWorkflowStep('expand');
+            }
+          });
+        }
+
+        function workflowSteps() {
+          return [
+            { no: '1', action: 'premise', title: '提炼 Premise', desc: '把素材压成一句主题 + 处境 + 真实态度。', bg: 'var(--purple-dim)', color: 'var(--purple)' },
+            { no: '2', action: 'angles', title: '找喜剧角度', desc: '找身份错位、误导、升级、比较等可写方向。', bg: 'var(--gold-dim)', color: 'var(--gold)' },
+            { no: '3', action: 'setup', title: '写 Setup', desc: '用最少信息建立场景和期待，不提前解释笑点。', bg: 'var(--teal-dim)', color: 'var(--teal)' },
+            { no: '4', action: 'punchline', title: '生成 Punchline', desc: '打破期待，把最锋利的词放在句尾。', bg: 'var(--pink-dim)', color: 'var(--pink)' },
+            { no: '5', action: 'tag', title: '补 Tag', desc: '沿同一逻辑连续补刀，短句升级。', bg: 'var(--orange-dim)', color: 'var(--orange)' },
+            { no: '6', action: 'callback', title: '做 Callback', desc: '回扣前文关键词、身份或开场问题，形成闭环。', bg: 'var(--gold-dim)', color: 'var(--gold)' },
+            { no: '7', action: 'polish', title: '舞台化润色', desc: '删解释，加停顿、动作和口语节奏。', bg: 'var(--purple-dim)', color: 'var(--purple)' },
+            { no: '8', action: 'repair', title: '结构修复', desc: '根据当前稿件问题给一版可插入修复段。', bg: 'rgba(255,77,109,.12)', color: 'var(--red)' }
+          ];
+        }
+
+        function runWorkflowStep(action) {
+          const bit = getWorkflowBit();
+          const prompt = workflowPrompt(action, bit);
+          const preferredType = {
+            premise: 'SETUP',
+            angles: 'OBSERVATIONAL',
+            setup: 'SETUP',
+            punchline: 'PUNCHLINE',
+            tag: 'TAGLINE',
+            callback: 'CALLBACK',
+            polish: bit.type || 'OBSERVATIONAL',
+            repair: 'OBSERVATIONAL',
+            expand: bit.type || currentSelectedType()
+          }[action] || 'OBSERVATIONAL';
+          runAIAction(action, prompt, {
+            activeBit: bit.text ? bit : undefined,
+            selectedText: bit.text,
+            preferredType
+          });
+        }
+
+        function getWorkflowBit() {
+          const block = findCurrentEditingBlock(Array.from(document.querySelectorAll('.bit-block')));
+          const bit = block ? bitFromBlock(block) : { order: 0, type: currentSelectedType(), text: '' };
+          if (!bit.text) {
+            bit.text = document.getElementById('mainInput')?.value.trim() || '';
+          }
+          return bit;
+        }
+
+        function workflowPrompt(action, bit) {
+          const text = bit.text || '我最近有一个想法，但还没有写成段子。';
+          const map = {
+            premise: `请基于这个素材提炼脱口秀 Premise：${text}`,
+            angles: `请基于这个素材找 5 个不同喜剧角度，每个角度给反常观察和可发展的笑点：${text}`,
+            setup: `请把这个素材写成简短 Setup，只保留观众理解笑点所需的信息：${text}`,
+            punchline: `请为这个 Setup/素材生成 3 个 Punchline，选最强的放入 insertText：${text}`,
+            tag: `请围绕这个笑点补 3 个 Tag，逻辑连续、越来越短：${text}`,
+            callback: `请根据当前稿件生成 Callback，回扣素材或全文高频词。当前素材：${text}`,
+            polish: `请把这段润色成更适合上台讲的版本：删解释、加停顿、保留原意：${text}`,
+            repair: `请从脱口秀结构角度修复这段或当前稿件：找弱点，给可插入修改：${text}`,
+            expand: `请从这个素材生成完整 Bit：先 Premise，再 Setup，最后 Punchline，可补 1 个 Tag：${text}`
+          };
+          return map[action] || text;
         }
 
         function openAIHistoryModal() {
@@ -8118,6 +8159,411 @@
           document.addEventListener('DOMContentLoaded', initBitDragSort);
         } else {
           initBitDragSort();
+        }
+      })();
+    </script>
+    <script>
+      (() => {
+        const DRAFT_KEY = 'riffmaster.prototype.v1';
+        const REAL_BOOT_KEY = 'riffmaster.realDataBooted.v1';
+
+        function initRealDataMode() {
+          loadRealPrototypeShow();
+          addZeroCreateButton();
+          bindRealDeleteOverride();
+          patchSaveToRealApi();
+          window.openZeroShowWizard = openZeroShowWizard;
+        }
+
+        async function loadRealPrototypeShow() {
+          try {
+            const response = await fetch('/api/shows/prototype', { cache: 'no-store' });
+            const data = await response.json();
+            if (data.show && Array.isArray(data.show.bits) && data.show.bits.length) {
+              applyRealShow(data.show);
+              localStorage.setItem(DRAFT_KEY, JSON.stringify(data.show));
+              localStorage.setItem(REAL_BOOT_KEY, '1');
+              return;
+            }
+          } catch {}
+
+          applyEmptyShow();
+          localStorage.setItem(REAL_BOOT_KEY, '1');
+        }
+
+        function addZeroCreateButton() {
+          const toolbar = document.querySelector('.tb-right');
+          if (!toolbar || toolbar.querySelector('[data-zero-create]')) return;
+          const button = document.createElement('button');
+          button.className = 'tb-btn btn-purple';
+          button.dataset.zeroCreate = '1';
+          button.innerHTML = '<i class="fa-solid fa-seedling"></i> 从0生成';
+          button.addEventListener('click', openZeroShowWizard);
+          toolbar.insertBefore(button, toolbar.firstChild);
+        }
+
+        function openZeroShowWizard() {
+          removeModal('zeroShowWizard');
+          const modal = document.createElement('div');
+          modal.id = 'zeroShowWizard';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:720px;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">从 0 生成一篇脱口秀</div>
+              <div class="modal-sub">先给 AI 明确素材边界，再生成可继续编辑的初稿</div>
+              ${field('主题 / 经历', 'zero-topic', '例如：第一次租房、被催婚、离职、健身失败、带娃、通勤')}
+              ${field('你的态度', 'zero-persona', '例如：嘴硬但心虚、表面成熟其实很慌、假装理性')}
+              ${field('风格偏好', 'zero-style', '例如：观察喜剧 + 自嘲 + Callback')}
+              ${field('观众对象', 'zero-audience', '例如：一二线城市打工人、大学生、亲密关系观众')}
+              <label style="display:block;margin-bottom:10px;">
+                <span style="display:block;font-size:11px;font-weight:800;color:var(--text-faint);margin-bottom:5px;">目标时长</span>
+                <input id="zero-duration" type="number" value="8" min="3" max="90" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;color:var(--text-white);padding:9px 10px;outline:none;">
+              </label>
+              ${field('限制 / 禁忌', 'zero-constraints', '例如：不要低俗、不要地域黑、需要更温和')}
+              <div style="display:flex;gap:8px;margin-top:14px;">
+                <button class="tb-btn btn-purple" data-generate-zero-show="1" style="flex:1;justify-content:center;"><i class="fa-solid fa-wand-magic-sparkles"></i> 生成初稿</button>
+                <button class="tb-btn btn-border" data-empty-draft="1">只创建空白稿</button>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', async event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            if (event.target.closest('[data-empty-draft]')) {
+              applyEmptyShow();
+              await persistRealShow(serializeRealShow());
+              modal.remove();
+            }
+            if (event.target.closest('[data-generate-zero-show]')) {
+              await generateShowFromZero(modal);
+            }
+          });
+        }
+
+        async function generateShowFromZero(modal) {
+          const topic = document.getElementById('zero-topic')?.value.trim();
+          if (!topic) return showToast('请先输入主题或经历');
+          const button = modal.querySelector('[data-generate-zero-show]');
+          button.disabled = true;
+          button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 正在生成...';
+          try {
+            const response = await fetch('/api/ai/show', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                topic,
+                persona: document.getElementById('zero-persona')?.value.trim(),
+                style: document.getElementById('zero-style')?.value.trim(),
+                audience: document.getElementById('zero-audience')?.value.trim(),
+                durationMinutes: Number(document.getElementById('zero-duration')?.value || 8),
+                constraints: document.getElementById('zero-constraints')?.value.trim()
+              })
+            });
+            if (!response.ok) throw new Error(`generate ${response.status}`);
+            const generated = await response.json();
+            const show = {
+              title: generated.title,
+              bits: generated.bits.map(bit => ({
+                type: bit.type,
+                html: bit.html || escapeHtml(bit.text),
+                score: bit.score || '—',
+                duration: bit.duration || estimateDurationLabel(bit.text),
+                reactions: { laugh: 0, smile: 0, flat: 0 }
+              }))
+            };
+            applyRealShow(show);
+            await persistRealShow(show);
+            modal.remove();
+            showToast(generated.source === 'openai' ? 'AI 初稿已生成' : '已生成本地初稿');
+            window.runRiffAiAnalysis?.({ silent: true });
+          } catch {
+            showToast('生成失败，请稍后重试');
+          } finally {
+            button.disabled = false;
+            button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 生成初稿';
+          }
+        }
+
+        function applyEmptyShow() {
+          applyRealShow({ title: '未命名节目', bits: [] });
+          renderEmptyState();
+        }
+
+        function applyRealShow(show) {
+          document.querySelector('.show-title-input').value = show.title || '未命名节目';
+          document.querySelectorAll('.bit-block').forEach(block => block.remove());
+          const addRow = document.querySelector('.add-bit-row');
+          show.bits.forEach(bit => addRow.parentNode.insertBefore(renderRealBit(bit), addRow));
+          if (!show.bits.length) renderEmptyState();
+          else removeEmptyState();
+          updateRealStats();
+          clearStaticPanels(show);
+        }
+
+        function renderEmptyState() {
+          removeEmptyState();
+          const addRow = document.querySelector('.add-bit-row');
+          const empty = document.createElement('div');
+          empty.id = 'realEmptyState';
+          empty.style.cssText = 'border:1px dashed rgba(155,109,255,.35);background:rgba(155,109,255,.08);border-radius:18px;padding:26px;text-align:center;margin:12px 0 24px;';
+          empty.innerHTML = `
+            <div style="font-size:30px;color:var(--purple);margin-bottom:10px;"><i class="fa-solid fa-seedling"></i></div>
+            <div style="font-size:16px;font-weight:900;color:var(--text-white);">开始创作</div>
+            <div style="font-size:12px;color:var(--text-muted);margin:8px auto 14px;line-height:1.7;max-width:440px;">你可以手动添加段落，也可以让 AI 根据主题生成一篇完整初稿。</div>
+            <button class="tb-btn btn-purple" data-empty-zero-create="1" style="margin:auto;"><i class="fa-solid fa-wand-magic-sparkles"></i> 从0生成脱口秀</button>`;
+          addRow.parentNode.insertBefore(empty, addRow);
+          empty.querySelector('[data-empty-zero-create]').addEventListener('click', openZeroShowWizard);
+        }
+
+        function removeEmptyState() {
+          document.getElementById('realEmptyState')?.remove();
+        }
+
+        function renderRealBit(bit) {
+          const meta = bitTypeMeta(bit.type);
+          const div = document.createElement('div');
+          div.className = 'bit-block fade-in';
+          div.innerHTML = `
+            <div class="bit-header">
+              <span class="bit-type-tag ${meta.cls}">${meta.label}</span>
+              <span style="font-size:12px;color:var(--text-muted);font-weight:600;">${meta.name}</span>
+              <div class="bit-actions">
+                <button class="bit-act-btn" title="AI优化"><i class="fa-solid fa-wand-sparkles"></i></button>
+                <button class="bit-act-btn" title="移动"><i class="fa-solid fa-grip-vertical"></i></button>
+                <button class="bit-act-btn" title="复制"><i class="fa-regular fa-copy"></i></button>
+                <button class="bit-act-btn danger" title="删除"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>
+            <div class="bit-score-bar">
+              <span class="score-label">预期笑声</span>
+              <div class="score-track"><div class="score-fill" style="width:${escapeHtml(bit.score || '0%')};background:linear-gradient(to right,var(--purple),var(--pink));"></div></div>
+              <span class="score-val">${escapeHtml(bit.score || '—')}</span>
+            </div>
+            <div class="bit-content" style="padding-left:54px;">
+              <div class="bit-num">00</div>
+              <div class="bit-text" contenteditable="true" spellcheck="false" data-ph="在这里写这个 Bit…">${sanitizeHtml(bit.html || '')}</div>
+              <div class="bit-reactions">
+                <button class="reaction-btn"><span>😂</span> 大笑 <b style="margin-left:2px;">${Number(bit.reactions?.laugh || 0)}</b></button>
+                <button class="reaction-btn"><span>😄</span> 微笑 <b style="margin-left:2px;">${Number(bit.reactions?.smile || 0)}</b></button>
+                <button class="reaction-btn"><span>😐</span> 平淡 <b style="margin-left:2px;">${Number(bit.reactions?.flat || 0)}</b></button>
+                <span class="reaction-sep"></span>
+                <span class="time-badge"><i class="fa-regular fa-clock" style="font-size:9px;"></i> ${escapeHtml(bit.duration || '—')}</span>
+              </div>
+            </div>`;
+          setTimeout(updateRealStats, 0);
+          return div;
+        }
+
+        function clearStaticPanels(show) {
+          const bits = show.bits || [];
+          const text = bits.map(bit => String(bit.html || '').replace(/<[^>]+>/g, '')).join(' ');
+          const hasMeaningfulText = text.trim().length >= 20;
+          const words = hasMeaningfulText ? buildKeywordCloud(text) : [];
+          const tipList = document.querySelector('.ai-tip-list');
+          if (tipList) {
+            tipList.innerHTML = hasMeaningfulText
+              ? '<div style="font-size:12px;color:var(--text-muted);line-height:1.7;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px;">稿件已来自真实接口。点击「AI分析」后，这里会刷新为实时分析建议。</div>'
+              : '<div style="font-size:12px;color:var(--text-muted);line-height:1.7;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px;">暂无分析建议。生成或添加有效段落后，AI 才会实时分析。</div>';
+          }
+          const wordCloud = document.querySelector('.word-cloud');
+          if (wordCloud) {
+            wordCloud.innerHTML = words.length
+              ? words.map((word, index) => `<span class="cloud-word" style="background:rgba(155,109,255,.13);color:var(--purple);font-size:${12 + Math.max(0, 5 - index)}px;">${escapeHtml(word)}</span>`).join('')
+              : '<span class="cloud-word" style="background:var(--purple-dim);color:var(--purple);font-size:13px;">等待内容</span>';
+          }
+          const materialList = document.querySelector('.lp-list');
+          if (materialList) {
+            materialList.innerHTML = bits.length
+              ? `<div class="material-card active"><div class="mat-icon"><i class="fa-regular fa-file-lines"></i></div><div class="mat-body"><div class="mat-name">${escapeHtml(show.title || '当前稿件')}</div><div class="mat-meta"><span>${bits.length}段</span><span>真实接口数据</span></div></div></div>`
+              : '<div style="font-size:12px;color:var(--text-muted);line-height:1.7;padding:12px;">暂无素材。生成初稿或导入文本后会实时显示。</div>';
+          }
+          const statusTitle = document.querySelector('.statusbar .sb');
+          if (statusTitle) statusTitle.innerHTML = `<i class="fa-solid fa-microphone-lines"></i> ${escapeHtml(show.title || '未命名节目')}`;
+          const kicker = document.querySelector('.show-kicker .kicker-pill');
+          if (kicker) kicker.innerHTML = `<i class="fa-solid fa-microphone-lines" style="margin-right:5px;"></i>${bits.length ? 'STAND-UP · 当前稿件' : '等待节目类型'}`;
+          const kickerTime = document.querySelector('.show-kicker span:last-child');
+          if (kickerTime) kickerTime.textContent = `时长预计 ${estimateMinutes(bits)} 分钟`;
+          updateStaticMetrics(bits);
+          if (!hasMeaningfulText) document.querySelector('.ai-suggest')?.style.setProperty('display', 'none');
+          const chatList = document.getElementById('chatList');
+          if (chatList) {
+            chatList.querySelectorAll('.chat-row:not(#typingRow)').forEach(row => row.remove());
+            const welcome = document.createElement('div');
+            welcome.className = 'chat-row fade-in';
+            welcome.innerHTML = bits.length
+              ? '<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">稿件已加载。你可以问我“哪里最弱”“帮我加 Punchline”“重写第 3 段”，我会基于当前真实稿件回答。</div></div>'
+              : '<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">这是一个空白节目。点击「从0生成」或「写作流程」，我会按 Premise → Setup → Punchline → Callback 帮你写。</div></div>';
+            chatList.insertBefore(welcome, document.getElementById('typingRow'));
+          }
+        }
+
+        function buildKeywordCloud(text) {
+          const stopWords = new Set(['我', '你', '他', '她', '它', '的', '了', '是', '在', '和', '就', '都', '也', '但', '又', '说', '这', '那', '一个', '我们', '你们', '因为', '所以']);
+          const counts = new Map();
+          String(text || '').match(/[\u4e00-\u9fa5]{2,6}|[a-zA-Z]{3,}/g)?.forEach(word => {
+            if (stopWords.has(word)) return;
+            counts.set(word, (counts.get(word) || 0) + 1);
+          });
+          return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word]) => word);
+        }
+
+        function estimateMinutes(bits) {
+          const seconds = bits.reduce((sum, bit) => {
+            const text = String(bit.html || '').replace(/<[^>]+>/g, '');
+            return sum + Math.max(0, Math.round(text.length / 4));
+          }, 0);
+          return Math.round(seconds / 60);
+        }
+
+        function updateStaticMetrics(bits) {
+          const values = document.querySelectorAll('.metric-grid .m-val');
+          if (values.length >= 6) {
+            values[0].textContent = String(bits.length);
+            values[1].innerHTML = `${estimateMinutes(bits)}<span style="font-size:12px;">分</span>`;
+            values[2].textContent = '0';
+            values[3].textContent = '0';
+            values[4].textContent = '0%';
+            values[5].textContent = '0';
+          }
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(bits.length);
+        }
+
+        function patchSaveToRealApi() {
+          let timer = null;
+          document.addEventListener('input', event => {
+            if (!event.target.matches?.('.bit-text, .show-title-input')) return;
+            clearTimeout(timer);
+            timer = setTimeout(() => persistRealShow(serializeRealShow()), 700);
+          });
+          document.addEventListener('click', event => {
+            if (event.target.closest?.('.reaction-btn, .bit-act-btn, [data-real-ai-insert-after], [data-real-ai-insert-end]')) {
+              clearTimeout(timer);
+              timer = setTimeout(() => persistRealShow(serializeRealShow()), 900);
+            }
+          });
+        }
+
+        function bindRealDeleteOverride() {
+          if (document.documentElement.dataset.realDeleteBound) return;
+          document.documentElement.dataset.realDeleteBound = '1';
+          document.addEventListener('click', event => {
+            const button = event.target.closest?.('.bit-act-btn.danger');
+            if (!button) return;
+            const block = button.closest('.bit-block');
+            if (!block) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            block.remove();
+            const show = serializeRealShow();
+            if (!show.bits.length) {
+              renderEmptyState();
+            } else {
+              removeEmptyState();
+            }
+            updateRealStats();
+            clearStaticPanels(show);
+            persistRealShow(show);
+            showToast('已删除段落');
+          }, true);
+        }
+
+        async function persistRealShow(show) {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(show));
+          try {
+            await fetch('/api/shows/prototype', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(show)
+            });
+          } catch {}
+        }
+
+        function serializeRealShow() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
+              type: detectType(block),
+              html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
+              score: block.querySelector('.score-val')?.textContent || '—',
+              duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
+              reactions: {
+                laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
+                smile: Number(block.querySelectorAll('.reaction-btn b')[1]?.textContent || 0),
+                flat: Number(block.querySelectorAll('.reaction-btn b')[2]?.textContent || 0)
+              }
+            }))
+          };
+        }
+
+        function updateRealStats() {
+          document.querySelectorAll('.bit-block').forEach((block, index) => {
+            const num = block.querySelector('.bit-num');
+            if (num) num.textContent = String(index + 1).padStart(2, '0');
+          });
+          const count = document.getElementById('bitCount');
+          if (count) count.textContent = String(document.querySelectorAll('.bit-block').length);
+        }
+
+        function field(label, id, placeholder) {
+          return `<label style="display:block;margin-bottom:10px;"><span style="display:block;font-size:11px;font-weight:800;color:var(--text-faint);margin-bottom:5px;">${label}</span><input id="${id}" style="width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:9px;color:var(--text-white);padding:9px 10px;outline:none;" placeholder="${placeholder}"></label>`;
+        }
+
+        function bitTypeMeta(type) {
+          const map = {
+            SETUP: { cls: 'tag-setup', label: 'SETUP', name: '开场铺垫' },
+            PUNCHLINE: { cls: 'tag-punchline', label: 'PUNCHLINE', name: '核心笑点' },
+            TAGLINE: { cls: 'tag-tagline', label: 'TAGLINE', name: '补充笑点' },
+            CALLBACK: { cls: 'tag-callback', label: 'CALLBACK', name: '回扣笑点' },
+            OBSERVATIONAL: { cls: 'tag-observational', label: '观察类', name: '生活素材' },
+            SELF_DEPRECATION: { cls: 'tag-observational', label: '自嘲', name: '自嘲段落' }
+          };
+          return map[type] || map.OBSERVATIONAL;
+        }
+
+        function detectType(block) {
+          const tag = block.querySelector('.bit-type-tag');
+          if (tag?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (tag?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (tag?.classList.contains('tag-callback')) return 'CALLBACK';
+          if (tag?.textContent.includes('自嘲')) return 'SELF_DEPRECATION';
+          if (tag?.classList.contains('tag-observational')) return 'OBSERVATIONAL';
+          return 'SETUP';
+        }
+
+        function estimateDurationLabel(text) {
+          return `~${Math.max(10, Math.round(String(text || '').length / 4))}秒`;
+        }
+
+        function sanitizeHtml(html) {
+          const template = document.createElement('template');
+          template.innerHTML = html || '';
+          template.content.querySelectorAll('script, style, iframe, object, embed').forEach(node => node.remove());
+          return template.innerHTML;
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initRealDataMode);
+        } else {
+          initRealDataMode();
         }
       })();
     </script>

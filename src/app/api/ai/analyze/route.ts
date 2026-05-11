@@ -104,7 +104,7 @@ const aiAnalysisPatchSchema = z.object({
   )
 });
 
-const callbackWords = ["游客", "歪脖子树", "房租", "导航", "十年", "北京"];
+const callbackWords = ["开头", "回到", "最后", "第一次", "现在", "结果", "原来"];
 const turnWords = ["但", "结果", "后来", "没想到", "真正", "以为", "只是", "最后"];
 type AIAnalysisResponse = z.infer<typeof aiAnalysisResponseSchema>;
 type AISuggestion = AIAnalysisResponse["suggestions"][number];
@@ -192,8 +192,8 @@ function buildLocalAnalysis(title: string, bits: Array<{ id?: string; order?: nu
       { label: "观察", value: detectScore(bits, ["发现", "北京", "地铁", "房租", "导航"]) },
       { label: "共情", value: detectScore(bits, ["你们", "我们", "有没有", "大家"]) },
       { label: "转折", value: detectScore(bits, turnWords) },
-      { label: "荒诞", value: detectScore(bits, ["离谱", "抽象", "游客", "歪脖子树"]) },
-      { label: "温情", value: detectScore(bits, ["妈妈", "房东", "感动", "眼眶"]) }
+      { label: "荒诞", value: detectScore(bits, ["离谱", "抽象", "荒诞", "夸张"]) },
+      { label: "温情", value: detectScore(bits, ["家人", "朋友", "感动", "眼眶"]) }
     ],
     suggestions,
     summary: buildSummary(average, analyzedBits, suggestions)

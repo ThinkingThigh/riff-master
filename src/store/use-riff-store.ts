@@ -1,8 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { mockChatWithContext, mockGenerateCallback, mockOptimizeBit } from "@/lib/ai";
-import { initialShow } from "@/lib/mock-data";
+import { localChatWithContext, localGenerateCallback, localOptimizeBit } from "@/lib/ai";
+import { initialShow } from "@/lib/initial-state";
 import { safeId, stripHtml } from "@/lib/utils";
 import type {
   AIMessage,
@@ -64,7 +64,7 @@ type RiffSet = (partial: Partial<RiffState> | ((state: RiffState) => Partial<Rif
 
 export const useRiffStore = create<RiffState>((set, get) => ({
   show: initialShow,
-  activeBitId: "bit-1",
+  activeBitId: null,
   selectedBitType: "SETUP",
   rightTab: "analysis",
   selectedMaterialTab: "全部",
@@ -230,7 +230,7 @@ export const useRiffStore = create<RiffState>((set, get) => ({
       rightTab: "chat",
       isAiThinking: true
     }));
-    const reply = await mockChatWithContext(value);
+    const reply = await localChatWithContext(value);
     set((state) => ({
       show: { ...state.show, messages: [...state.show.messages, reply] },
       isAiThinking: false
@@ -240,7 +240,7 @@ export const useRiffStore = create<RiffState>((set, get) => ({
     const bit = get().show.bits.find((item) => item.id === id);
     if (!bit) return;
     set({ rightTab: "chat", isAiThinking: true });
-    const result = await mockOptimizeBit(bit, get().show);
+    const result = await localOptimizeBit(bit, get().show);
     const message: AIMessage = {
       id: safeId("msg"),
       role: "assistant",
@@ -257,7 +257,7 @@ export const useRiffStore = create<RiffState>((set, get) => ({
   },
   generateCallback: async () => {
     set({ rightTab: "chat", isAiThinking: true });
-    const result = await mockGenerateCallback();
+    const result = await localGenerateCallback();
     const message: AIMessage = {
       id: safeId("msg"),
       role: "assistant",
