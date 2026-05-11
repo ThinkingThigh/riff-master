@@ -7421,5 +7421,268 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        function initFullAIWorkflow() {
+          overrideChatActions();
+          bindCapturedAIButtons();
+          window.riffAiAction = runAIAction;
+        }
+
+        function overrideChatActions() {
+          window.rpSend = function rpSendWithRealAI() {
+            const input = document.getElementById('rpInput');
+            const prompt = input?.value.trim();
+            if (!prompt) return;
+            input.value = '';
+            runAIAction('chat', prompt);
+          };
+
+          window.aiExpand = function aiExpandWithRealAI() {
+            const input = document.getElementById('mainInput');
+            const prompt = input?.value.trim();
+            if (!prompt) return showToast('先输入一个想法');
+            runAIAction('expand', `请把这个想法扩写成完整段落：${prompt}`, {
+              selectedText: prompt,
+              preferredType: currentSelectedType()
+            });
+          };
+
+          window.doSuggest = function doSuggestWithRealAI() {
+            const keywords = topKeywords(collectShow().bits.map(bit => bit.text).join(' ')).slice(0, 3).join('、') || '游客、北京、房租';
+            runAIAction('callback', `请生成一个 Callback 段落，回扣这些关键词：${keywords}`, {
+              preferredType: 'CALLBACK'
+            });
+          };
+
+          window.aiReply = function aiReplyWithRealAI() {
+            runAIAction('expand', '帮我生成一段自嘲型 Bit，主题关于第一次在北京面试', {
+              preferredType: 'SELF_DEPRECATION'
+            });
+          };
+
+          window.aiReply2 = function aiReply2WithRealAI() {
+            runAIAction('chat', '请从观众角度重新分析整个节目的弱点，并给出三个可执行修改动作');
+          };
+        }
+
+        function bindCapturedAIButtons() {
+          document.addEventListener('click', event => {
+            const bitAction = event.target.closest?.('.bit-act-btn[title="AI优化"]');
+            if (bitAction) {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              const block = bitAction.closest('.bit-block');
+              const bit = bitFromBlock(block);
+              runAIAction('optimize', `请优化第 ${bit.order} 段，保留原意但增强笑点：${bit.text}`, {
+                activeBit: bit,
+                preferredType: bit.type
+              });
+              return;
+            }
+
+            const floatAI = event.target.closest?.('.fb-btn.magic');
+            if (floatAI) {
+              const selected = window.getSelection().toString().trim();
+              if (!selected) return;
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              runAIAction('rewrite', `请优化这句笑点：${selected}`, {
+                selectedText: selected,
+                preferredType: 'PUNCHLINE'
+              });
+            }
+          }, true);
+        }
+
+        async function runAIAction(action, prompt, options = {}) {
+          activateChatTab();
+          appendChatMessage('me', prompt);
+          setTyping(true);
+          const payload = {
+            action,
+            prompt,
+            selectedText: options.selectedText,
+            activeBit: options.activeBit,
+            show: collectShow()
+          };
+
+          try {
+            const response = await fetch('/api/ai/action', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`AI action ${response.status}`);
+            const result = await response.json();
+            const normalized = {
+              ...result,
+              type: result.type || options.preferredType,
+              insertText: result.insertText,
+              insertHtml: result.insertHtml
+            };
+            appendChatMessage('ai', result.message || fallbackMessage(action), normalized);
+            if (result.source === 'openai') showToast('AI 已生成');
+            else showToast('AI 已使用本地降级建议');
+          } catch {
+            const fallback = localFallback(action, prompt, options);
+            appendChatMessage('ai', fallback.message, fallback);
+            showToast('AI 请求失败，已使用本地建议');
+          } finally {
+            setTyping(false);
+            scrollChat();
+          }
+        }
+
+        function appendChatMessage(role, text, action = {}) {
+          const list = document.getElementById('chatList');
+          const typing = document.getElementById('typingRow');
+          if (!list || !typing) return;
+          const row = document.createElement('div');
+          row.className = role === 'me' ? 'chat-row me fade-in' : 'chat-row fade-in';
+          if (role === 'me') {
+            row.innerHTML = `<div class="chat-ava me-av">李</div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
+          } else {
+            const canInsert = action.insertText || action.insertHtml;
+            const actions = canInsert
+              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert="1"><i class="fa-solid fa-check"></i> 插入为新段落</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来一版</button></div>`
+              : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
+            row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actions}</div>`;
+            row.querySelector('[data-real-ai-insert]')?.addEventListener('click', () => {
+              window.addBit?.({
+                type: action.type || 'OBSERVATIONAL',
+                html: action.insertHtml || escapeHtml(action.insertText),
+                duration: estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))
+              });
+              showToast('已插入 AI 段落');
+            });
+            row.querySelector('[data-real-ai-copy]')?.addEventListener('click', () => {
+              navigator.clipboard?.writeText(action.insertText || stripHtml(action.insertHtml || text));
+              showToast('已复制 AI 内容');
+            });
+            row.querySelector('[data-real-ai-retry]')?.addEventListener('click', () => {
+              runAIAction(action.type === 'CALLBACK' ? 'callback' : 'rewrite', `请换一个角度重写：${action.insertText || text}`, {
+                selectedText: action.insertText || text,
+                preferredType: action.type
+              });
+            });
+          }
+          list.insertBefore(row, typing);
+        }
+
+        function collectShow() {
+          return {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits: Array.from(document.querySelectorAll('.bit-block')).map((block, index) => ({
+              order: index + 1,
+              type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+              text: block.querySelector('.bit-text')?.innerText.trim() || ''
+            })).filter(bit => bit.text)
+          };
+        }
+
+        function bitFromBlock(block) {
+          const blocks = Array.from(document.querySelectorAll('.bit-block'));
+          const index = Math.max(0, blocks.indexOf(block));
+          return {
+            order: index + 1,
+            type: block?.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block?.querySelector('.bit-text')?.innerText.trim() || ''
+          };
+        }
+
+        function currentSelectedType() {
+          const selected = document.querySelector('.iti-btn.on');
+          if (selected?.classList.contains('tag-punchline')) return 'PUNCHLINE';
+          if (selected?.classList.contains('tag-tagline')) return 'TAGLINE';
+          if (selected?.classList.contains('tag-callback')) return 'CALLBACK';
+          return 'SETUP';
+        }
+
+        function topKeywords(text) {
+          const counts = {};
+          (text.match(/[\u4e00-\u9fa5]{2,6}/g) || []).forEach(word => {
+            if (['这个', '那个', '就是', '因为', '所以', '然后', '我们', '你们'].includes(word)) return;
+            counts[word] = (counts[word] || 0) + 1;
+          });
+          return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([word]) => word);
+        }
+
+        function localFallback(action, prompt, options) {
+          const base = options.selectedText || options.activeBit?.text || prompt;
+          if (action === 'callback') {
+            return {
+              message: '可以用一个身份回扣收尾，让前文关键词重新出现。',
+              insertText: '后来我才明白，真正留下来的不是我，是这些年每一个舍不得删掉的定位记录。',
+              type: 'CALLBACK'
+            };
+          }
+          return {
+            message: fallbackMessage(action),
+            insertText: `${base} 但真正荒诞的是，我以为这是生活给我的考验，后来发现这只是生活在测试我的自动续费能力。`,
+            type: options.preferredType || 'OBSERVATIONAL'
+          };
+        }
+
+        function fallbackMessage(action) {
+          if (action === 'expand') return '我把想法扩成了一个可继续打磨的段落。';
+          if (action === 'optimize' || action === 'rewrite') return '建议压缩铺垫，把反转词放到句尾。';
+          if (action === 'callback') return '我生成了一个可回扣前文关键词的结尾方向。';
+          return '我给出了一组可执行的修改建议。';
+        }
+
+        function activateChatTab() {
+          document.querySelectorAll('.rp-tab').forEach(tab => tab.classList.remove('on'));
+          document.querySelectorAll('.rp-tab')[1]?.classList.add('on');
+          ['rt-analysis', 'rt-chat', 'rt-words', 'rt-ref'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = id === 'rt-chat' ? 'block' : 'none';
+          });
+        }
+
+        function setTyping(visible) {
+          const typing = document.getElementById('typingRow');
+          if (typing) typing.style.display = visible ? 'flex' : 'none';
+        }
+
+        function scrollChat() {
+          const c = document.getElementById('rt-chat');
+          if (c) setTimeout(() => c.scrollTop = c.scrollHeight, 80);
+        }
+
+        function stripHtml(html) {
+          const div = document.createElement('div');
+          div.innerHTML = html || '';
+          return div.innerText || '';
+        }
+
+        function estimateDurationLabel(text) {
+          return `~${Math.max(8, Math.round(String(text || '').length / 4))}秒`;
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initFullAIWorkflow);
+        } else {
+          initFullAIWorkflow();
+        }
+      })();
+    </script>
   </body>
 </html>
