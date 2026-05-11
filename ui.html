@@ -6860,5 +6860,566 @@
         }
       })();
     </script>
+    <script>
+      (() => {
+        const ANALYSIS_CACHE_KEY = 'riffmaster.ai.analysis.v1';
+        let analysisTimer = null;
+        let lastAnalysis = null;
+
+        function initAdvancedAIAnalysisFeatures() {
+          lastAnalysis = readCachedAnalysis();
+          addAnalyzeEntryButton();
+          bindAnalysisEntrypoints();
+          bindLiveAnalysis();
+          bindTipActions();
+          if (lastAnalysis) updateAnalysisPanel(lastAnalysis);
+          setTimeout(() => runFullAnalysis({ silent: true }), 700);
+          window.runRiffAiAnalysis = runFullAnalysis;
+        }
+
+        function addAnalyzeEntryButton() {
+          const head = document.querySelector('.rp-head');
+          if (!head || head.querySelector('[data-run-ai-analysis]')) return;
+          const button = document.createElement('button');
+          button.dataset.runAiAnalysis = '1';
+          button.style.cssText = 'border:1px solid rgba(155,109,255,.35);background:rgba(155,109,255,.12);color:var(--purple);border-radius:9px;padding:7px 10px;font-size:11px;font-weight:900;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;';
+          button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> 重新分析';
+          button.addEventListener('click', () => runFullAnalysis({ openReport: true }));
+          head.appendChild(button);
+        }
+
+        function bindAnalysisEntrypoints() {
+          const topAiButton = document.querySelector('.tb-btn.btn-gold');
+          if (topAiButton && !topAiButton.dataset.advancedAiBound) {
+            topAiButton.dataset.advancedAiBound = '1';
+            topAiButton.addEventListener('click', event => {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              runFullAnalysis({ openReport: true });
+            }, true);
+          }
+
+          const railAnalysis = document.querySelector('.rail-btn[title="笑点分析"]');
+          if (railAnalysis && !railAnalysis.dataset.advancedAiBound) {
+            railAnalysis.dataset.advancedAiBound = '1';
+            railAnalysis.addEventListener('click', event => {
+              event.preventDefault();
+              event.stopImmediatePropagation();
+              document.querySelectorAll('.rail-btn').forEach(btn => btn.classList.remove('on'));
+              railAnalysis.classList.add('on');
+              runFullAnalysis({ openReport: true });
+            }, true);
+          }
+
+          const oldReply = window.aiReply2;
+          window.aiReply2 = function aiReply2WithAnalysis() {
+            runFullAnalysis({ chatSummary: true });
+            if (typeof oldReply === 'function') {
+              setTimeout(() => oldReply(), 80);
+            }
+          };
+        }
+
+        function bindLiveAnalysis() {
+          document.addEventListener('input', event => {
+            if (!event.target.matches?.('.bit-text, .show-title-input')) return;
+            clearTimeout(analysisTimer);
+            analysisTimer = setTimeout(() => runFullAnalysis({ silent: true }), 1200);
+          });
+        }
+
+        function bindTipActions() {
+          document.addEventListener('click', event => {
+            const tip = event.target.closest?.('[data-ai-tip-order]');
+            if (!tip) return;
+            const order = Number(tip.dataset.aiTipOrder);
+            const action = event.target.closest('[data-ai-tip-action]')?.dataset.aiTipAction;
+            if (action === 'ask') {
+              const bit = collectBits()[order - 1];
+              window.rpFill?.(`请基于 AI 分析继续优化第 ${order} 段：${bit?.text || ''}`);
+              document.querySelectorAll('.rp-tab')[1]?.click();
+              window.rpSend?.();
+            } else {
+              jumpToBit(order - 1);
+            }
+          });
+        }
+
+        async function runFullAnalysis(options = {}) {
+          const bits = collectBits();
+          if (!bits.length) {
+            showToast('请先添加至少一个 Bit');
+            return null;
+          }
+
+          if (!options.silent) setAiStatus('AI 正在分析稿件…', true);
+          const payload = {
+            title: document.querySelector('.show-title-input')?.value || '未命名节目',
+            bits
+          };
+
+          try {
+            const response = await fetch('/api/ai/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!response.ok) throw new Error(`analysis ${response.status}`);
+            lastAnalysis = await response.json();
+          } catch {
+            lastAnalysis = localAnalyze(payload);
+          }
+
+          localStorage.setItem(ANALYSIS_CACHE_KEY, JSON.stringify({ ...lastAnalysis, analyzedAt: new Date().toISOString() }));
+          updateAnalysisPanel(lastAnalysis);
+          updateBitScores(lastAnalysis);
+          if (!options.silent) showToast('AI 分析已更新');
+          if (options.openReport) openAiAnalysisReport(lastAnalysis);
+          if (options.chatSummary) appendAnalysisChat(lastAnalysis);
+          setAiStatus(`已分析 ${bits.length} 段 · 平均 ${lastAnalysis.averageLaughDensity}/10`, false);
+          return lastAnalysis;
+        }
+
+        function updateAnalysisPanel(analysis) {
+          updateDensityChart(analysis);
+          updateMoodTimeline(analysis);
+          updateMetricCards(analysis);
+          updateTipList(analysis);
+          updateWordPanel(analysis);
+          updateEmotionChart(analysis);
+          updateInlineSuggestion(analysis);
+        }
+
+        function updateDensityChart(analysis) {
+          const barsEl = document.getElementById('densityBars');
+          const labelsEl = document.getElementById('densityLabels');
+          if (!barsEl || !labelsEl) return;
+          const colorMap = {
+            gold: 'rgba(245,200,66,',
+            purple: 'rgba(155,109,255,',
+            orange: 'rgba(255,140,66,',
+            pink: 'rgba(255,107,157,',
+            teal: 'rgba(62,207,176,'
+          };
+          barsEl.innerHTML = '';
+          labelsEl.innerHTML = '';
+          analysis.densityBars.forEach((bar, index) => {
+            const color = colorMap[bar.color] || colorMap.purple;
+            const div = document.createElement('div');
+            div.className = 'db-bar';
+            div.dataset.val = `${bar.value}/10`;
+            div.style.height = '0';
+            div.style.background = `${color}0.6)`;
+            div.style.borderTop = `2px solid ${color}1)`;
+            barsEl.appendChild(div);
+            setTimeout(() => {
+              div.style.height = `${Math.max(4, bar.value / 10 * 50)}px`;
+            }, 80 + index * 45);
+
+            const label = document.createElement('div');
+            label.className = 'dl-item';
+            label.textContent = bar.label;
+            labelsEl.appendChild(label);
+          });
+
+          const averageLabel = document.querySelector('.density-chart .dc-label span:last-child');
+          if (averageLabel) {
+            averageLabel.innerHTML = `平均 ${escapeHtml(analysis.averageLaughDensity)}/10 <i class="fa-solid fa-arrow-trend-up" style="font-size:10px;margin-left:2px;"></i>`;
+          }
+        }
+
+        function updateMoodTimeline(analysis) {
+          const timeline = document.querySelector('.mood-timeline');
+          if (!timeline) return;
+          timeline.innerHTML = analysis.moodTimeline.map(item => `
+            <div class="mood-seg">
+              <span class="mood-emoji">${escapeHtml(item.emoji)}</span>
+              <div class="mood-time">${escapeHtml(item.time)}</div>
+              <div class="mood-val">${escapeHtml(item.value)}</div>
+            </div>
+          `).join('');
+        }
+
+        function updateMetricCards(analysis) {
+          const values = document.querySelectorAll('.metric-grid .m-val');
+          if (values.length < 6) return;
+          const totalSeconds = analysis.analyzedBits.reduce((sum, bit) => sum + Number(bit.durationSeconds || 0), 0);
+          const minutes = Math.max(1, Math.round(totalSeconds / 60));
+          values[0].textContent = String(analysis.analyzedBits.length);
+          values[1].innerHTML = `${minutes}<span style="font-size:12px;">分</span>`;
+          values[2].textContent = String(analysis.peakLaughCount);
+          values[3].textContent = String(analysis.averageLaughDensity);
+          values[4].textContent = `${analysis.completionRate}%`;
+          values[5].textContent = String(analysis.callbackCount);
+          document.querySelectorAll('.laugh-val').forEach(el => {
+            el.textContent = String(analysis.averageLaughDensity);
+          });
+          document.querySelectorAll('.sp-fill').forEach(el => {
+            el.style.width = `${analysis.completionRate}%`;
+          });
+        }
+
+        function updateTipList(analysis) {
+          const list = document.querySelector('.ai-tip-list');
+          if (!list) return;
+          const iconMap = {
+            strength: '🎯',
+            optimize: '⚠️',
+            callback: '🔄',
+            structure: '💡'
+          };
+          const colorMap = {
+            '高优': ['rgba(62,207,176,0.12)', 'var(--teal)'],
+            '优化': ['rgba(255,140,66,0.12)', 'var(--orange)'],
+            '亮点': ['rgba(245,200,66,0.12)', 'var(--gold)'],
+            '建议': ['rgba(155,109,255,0.12)', 'var(--purple)']
+          };
+          list.innerHTML = analysis.suggestions.map((tip, index) => {
+            const [bg, color] = colorMap[tip.priority] || colorMap['建议'];
+            const order = tip.relatedOrder || index + 1;
+            return `
+              <div class="ai-tip" data-ai-tip-order="${order}">
+                <div class="ai-tip-icon">${iconMap[tip.type] || '💡'}</div>
+                <div class="ai-tip-body">
+                  <div class="ai-tip-title">${escapeHtml(tip.title)}</div>
+                  <div class="ai-tip-desc">${escapeHtml(tip.description)}</div>
+                  <div style="display:flex;gap:6px;margin-top:8px;">
+                    <button class="ca-btn ok" data-ai-tip-action="ask"><i class="fa-solid fa-wand-sparkles"></i> 生成优化</button>
+                    <button class="ca-btn" data-ai-tip-action="locate"><i class="fa-solid fa-location-dot"></i> 定位</button>
+                  </div>
+                </div>
+                <span class="ai-tip-badge" style="background:${bg};color:${color};">${escapeHtml(tip.priority)}</span>
+              </div>
+            `;
+          }).join('');
+        }
+
+        function updateWordPanel(analysis) {
+          const cloud = document.querySelector('.word-cloud');
+          if (cloud) {
+            cloud.innerHTML = analysis.wordCloud.map(item => `
+              <span class="cloud-word" style="background:var(--${escapeHtml(item.color)}-dim, rgba(155,109,255,0.12));color:var(--${escapeHtml(item.color)});font-size:${Number(item.weight)}px;">${escapeHtml(item.word)}</span>
+            `).join('');
+          }
+
+          const repeatedTitle = Array.from(document.querySelectorAll('#rt-words .sec-title')).find(el => el.textContent.includes('重复词频'));
+          const repeatedBox = repeatedTitle?.nextElementSibling;
+          if (repeatedBox) {
+            repeatedBox.innerHTML = (analysis.repeatedWords.length ? analysis.repeatedWords : [{ word: '暂无高频重复', count: 0, severity: 'ok' }]).map(item => {
+              const color = item.severity === 'warning' ? 'var(--red)' : item.severity === 'notice' ? 'var(--orange)' : 'var(--teal)';
+              return `
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+                  <span style="font-size:12px;color:var(--text-soft);flex:1;">「${escapeHtml(item.word)}」</span>
+                  <div style="width:80px;height:4px;background:var(--bg-raised);border-radius:2px;overflow:hidden;">
+                    <div style="width:${Math.min(100, Number(item.count) * 12)}%;height:100%;background:${color};border-radius:2px;"></div>
+                  </div>
+                  <span style="font-size:10px;color:var(--text-faint);">${Number(item.count)}次</span>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+
+        function updateEmotionChart(analysis) {
+          const canvas = document.getElementById('emoChart');
+          if (!canvas || !window.Chart) return;
+          const previous = Chart.getChart ? Chart.getChart(canvas) : null;
+          if (previous) previous.destroy();
+          new Chart(canvas, {
+            type: 'radar',
+            data: {
+              labels: analysis.emotionRadar.map(item => item.label),
+              datasets: [{
+                data: analysis.emotionRadar.map(item => item.value),
+                backgroundColor: 'rgba(155,109,255,0.2)',
+                borderColor: 'rgba(155,109,255,0.8)',
+                borderWidth: 1.5,
+                pointBackgroundColor: '#9B6DFF',
+                pointRadius: 3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                r: {
+                  grid: { color: 'rgba(255,255,255,0.06)' },
+                  angleLines: { color: 'rgba(255,255,255,0.06)' },
+                  pointLabels: { color: '#6E6A84', font: { size: 10 } },
+                  ticks: { display: false },
+                  min: 0,
+                  max: 10
+                }
+              }
+            }
+          });
+        }
+
+        function updateInlineSuggestion(analysis) {
+          const box = document.querySelector('.ai-suggest');
+          if (!box || !analysis.suggestions.length) return;
+          const callback = analysis.suggestions.find(item => item.type === 'callback') || analysis.suggestions[0];
+          const label = box.querySelector('.ai-suggest-label');
+          const text = box.querySelector('.ai-suggest-text');
+          if (label) label.textContent = `✨ AI 建议：${callback.title}`;
+          if (text) text.textContent = callback.description;
+        }
+
+        function updateBitScores(analysis) {
+          analysis.analyzedBits.forEach((item, index) => {
+            const block = document.querySelectorAll('.bit-block')[index];
+            const score = block?.querySelector('.score-val');
+            const duration = block?.querySelector('.time-badge');
+            if (score) score.textContent = `${Math.round(item.score * 10)}%`;
+            if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ~${Math.max(8, Math.round(item.durationSeconds))}秒`;
+          });
+        }
+
+        function openAiAnalysisReport(analysis) {
+          removeModal('advancedAnalysisModal');
+          const weakest = [...analysis.analyzedBits].sort((a, b) => a.score - b.score)[0];
+          const modal = document.createElement('div');
+          modal.id = 'advancedAnalysisModal';
+          modal.className = 'modal-bg open';
+          modal.innerHTML = `
+            <div class="modal-box" style="max-width:920px;max-height:84vh;overflow:auto;">
+              <button class="modal-close" data-close="1"><i class="fa-solid fa-xmark"></i></button>
+              <div class="modal-title">AI 笑点分析报告</div>
+              <div class="modal-sub">${escapeHtml(analysis.summary)}</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                <div class="m-card"><div class="m-val" style="color:var(--gold);">${escapeHtml(analysis.averageLaughDensity)}</div><div class="m-label">平均笑点</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--purple);">${analysis.analyzedBits.length}</div><div class="m-label">段落数</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--orange);">${weakest?.order || '-'}</div><div class="m-label">最需优化</div></div>
+                <div class="m-card"><div class="m-val" style="color:var(--teal);">${analysis.peakLaughCount}</div><div class="m-label">强笑点</div></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:12px;">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  ${analysis.analyzedBits.map(bit => bitReportCard(bit)).join('')}
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;">
+                    <div style="font-size:12px;font-weight:900;color:var(--text-white);margin-bottom:8px;">关键建议</div>
+                    ${analysis.suggestions.map(tip => `
+                      <div style="padding:9px 0;border-top:1px solid var(--border);">
+                        <div style="font-size:12px;font-weight:800;color:var(--purple);">${escapeHtml(tip.title)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);line-height:1.55;margin-top:4px;">${escapeHtml(tip.description)}</div>
+                      </div>
+                    `).join('')}
+                  </div>
+                  <button class="tb-btn btn-purple" data-copy-ai-report="1" style="justify-content:center;"><i class="fa-regular fa-copy"></i> 复制分析摘要</button>
+                  <button class="tb-btn btn-gold" data-ask-ai-fix="1" style="justify-content:center;"><i class="fa-solid fa-wand-sparkles"></i> 让 AI 生成修复方案</button>
+                </div>
+              </div>
+            </div>`;
+          document.body.appendChild(modal);
+          modal.addEventListener('click', event => {
+            if (event.target === modal || event.target.closest('[data-close]')) modal.remove();
+            const locate = event.target.closest('[data-locate-bit]');
+            if (locate) jumpToBit(Number(locate.dataset.locateBit) - 1);
+            const optimize = event.target.closest('[data-optimize-bit]');
+            if (optimize) {
+              const bit = analysis.analyzedBits.find(item => item.order === Number(optimize.dataset.optimizeBit));
+              window.rpFill?.(`请按这个分析优化第 ${bit?.order} 段：${bit?.issues?.join('，') || '补强反转和收尾'}。原文：${collectBits()[Number(optimize.dataset.optimizeBit) - 1]?.text || ''}`);
+              document.querySelectorAll('.rp-tab')[1]?.click();
+              window.rpSend?.();
+              modal.remove();
+            }
+            if (event.target.closest('[data-copy-ai-report]')) copyAnalysisSummary(analysis);
+            if (event.target.closest('[data-ask-ai-fix]')) {
+              window.rpFill?.(`请根据以下分析给出完整修复方案：${analysis.summary}`);
+              document.querySelectorAll('.rp-tab')[1]?.click();
+              window.rpSend?.();
+              modal.remove();
+            }
+          });
+        }
+
+        function bitReportCard(bit) {
+          const tone = bit.score >= 8 ? 'var(--teal)' : bit.score >= 6.5 ? 'var(--gold)' : 'var(--orange)';
+          return `
+            <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <b style="color:var(--purple);font-size:12px;">第 ${bit.order} 段 · ${escapeHtml(bit.type)}</b>
+                <span style="margin-left:auto;color:${tone};font-weight:900;">${bit.score}/10</span>
+              </div>
+              <div style="height:5px;background:var(--bg-card);border-radius:3px;overflow:hidden;margin:8px 0;">
+                <div style="height:100%;width:${bit.score * 10}%;background:linear-gradient(to right,var(--purple),var(--pink),var(--gold));"></div>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);line-height:1.6;">${escapeHtml(bit.pace)} · ${escapeHtml((bit.issues || []).join('，') || '结构健康')}</div>
+              <div style="display:flex;gap:6px;margin-top:9px;">
+                <button class="ca-btn" data-locate-bit="${bit.order}"><i class="fa-solid fa-location-dot"></i> 定位</button>
+                <button class="ca-btn ok" data-optimize-bit="${bit.order}"><i class="fa-solid fa-wand-sparkles"></i> 优化</button>
+              </div>
+            </div>
+          `;
+        }
+
+        function appendAnalysisChat(analysis) {
+          const list = document.getElementById('chatList');
+          const typing = document.getElementById('typingRow');
+          if (!list || !typing) return;
+          const row = document.createElement('div');
+          row.className = 'chat-row fade-in';
+          row.innerHTML = `
+            <div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div>
+            <div>
+              <div class="chat-bub ai">${escapeHtml(analysis.summary)} 重点建议：${escapeHtml(analysis.suggestions[0]?.description || '继续补强反转和回扣。')}</div>
+              <div class="chat-acts"><button class="ca-btn ok" onclick="window.runRiffAiAnalysis?.({ openReport: true })"><i class="fa-solid fa-chart-line"></i> 查看报告</button></div>
+            </div>`;
+          list.insertBefore(row, typing);
+        }
+
+        function copyAnalysisSummary(analysis) {
+          const lines = [
+            `《${analysis.title}》AI 分析`,
+            `平均笑点：${analysis.averageLaughDensity}/10`,
+            `完成度：${analysis.completionRate}%`,
+            `强笑点：${analysis.peakLaughCount} 个`,
+            analysis.summary,
+            ...analysis.suggestions.map(item => `- ${item.title}：${item.description}`)
+          ];
+          navigator.clipboard?.writeText(lines.join('\n'));
+          showToast('分析摘要已复制');
+        }
+
+        function collectBits() {
+          return Array.from(document.querySelectorAll('.bit-block')).map((block, index) => ({
+            id: block.dataset.bitId || `bit-${index + 1}`,
+            order: index + 1,
+            type: block.querySelector('.bit-type-tag')?.textContent.trim() || 'BIT',
+            text: block.querySelector('.bit-text')?.innerText.trim() || ''
+          })).filter(bit => bit.text);
+        }
+
+        function localAnalyze(payload) {
+          const analyzedBits = payload.bits.map((bit, index) => {
+            const score = estimateScore(bit.text);
+            return {
+              id: bit.id,
+              order: index + 1,
+              type: bit.type,
+              score,
+              pace: bit.text.length > 170 ? '偏慢，需要压缩铺垫' : bit.text.length < 30 ? '偏短，适合做补刀' : '节奏适中',
+              durationSeconds: Math.max(10, Math.round(bit.text.length / 4)),
+              keywords: extractKeywords(bit.text).slice(0, 5),
+              issues: bit.text.length > 170 ? ['铺垫偏长'] : [],
+              strengths: /但|结果|没想到|最后|游客|房租/.test(bit.text) ? ['有反转或回扣线索'] : []
+            };
+          });
+          const counts = countKeywords(payload.bits.map(bit => bit.text).join(' '));
+          const avg = analyzedBits.length ? Number((analyzedBits.reduce((sum, bit) => sum + bit.score, 0) / analyzedBits.length).toFixed(1)) : 0;
+          const weakest = [...analyzedBits].sort((a, b) => a.score - b.score)[0];
+          const strongest = [...analyzedBits].sort((a, b) => b.score - a.score)[0];
+          const topWord = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+          return {
+            title: payload.title,
+            averageLaughDensity: avg,
+            completionRate: Math.min(100, Math.round(payload.bits.filter(bit => bit.text.length > 20).length / Math.max(payload.bits.length, 1) * 80 + 12)),
+            callbackCount: payload.bits.filter(bit => /回到|开头|游客|歪脖子树|最后/.test(bit.text)).length,
+            peakLaughCount: analyzedBits.filter(bit => bit.score >= 8).length,
+            analyzedBits,
+            densityBars: analyzedBits.map(bit => ({ label: `Bit${bit.order}`, value: bit.score, color: bit.score >= 8 ? 'gold' : bit.score >= 6.5 ? 'purple' : 'orange' })),
+            moodTimeline: ['0-2min', '2-5min', '5-9min', '9-14min', '14min+'].map((time, index) => {
+              const value = Math.round((analyzedBits[Math.min(index, analyzedBits.length - 1)]?.score || 5) * 10);
+              return { time, value, emoji: value >= 90 ? '🤣' : value >= 80 ? '😂' : value >= 65 ? '😄' : '😐' };
+            }),
+            wordCloud: Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 14).map(([word, count], index) => ({ word, count, weight: Math.min(20, 11 + count * 2), color: ['purple', 'gold', 'pink', 'teal', 'orange', 'red'][index % 6] })),
+            repeatedWords: Object.entries(counts).filter(([, count]) => count >= 3).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([word, count]) => ({ word, count, severity: count >= 8 ? 'warning' : count >= 5 ? 'notice' : 'ok' })),
+            emotionRadar: [
+              { label: '自嘲', value: detectScore(payload.bits, ['我', '自己', '尴尬']) },
+              { label: '观察', value: detectScore(payload.bits, ['发现', '北京', '地铁']) },
+              { label: '共情', value: detectScore(payload.bits, ['你们', '我们', '大家']) },
+              { label: '转折', value: detectScore(payload.bits, ['但', '结果', '没想到']) },
+              { label: '荒诞', value: detectScore(payload.bits, ['离谱', '抽象', '游客']) },
+              { label: '温情', value: detectScore(payload.bits, ['妈妈', '房东', '感动']) }
+            ],
+            suggestions: [
+              strongest && { type: 'strength', priority: '高优', title: `第${strongest.order}段是当前强笑点`, description: '建议保留核心句，并在演出时给足停顿。', relatedOrder: strongest.order },
+              weakest && { type: 'optimize', priority: '优化', title: `第${weakest.order}段需要补强`, description: weakest.issues.join('，') || '建议增加一个更明确的反转句。', relatedOrder: weakest.order },
+              topWord && { type: 'callback', priority: '亮点', title: `Callback 机会：「${topWord[0]}」`, description: `该词出现 ${topWord[1]} 次，适合在结尾做回扣。`, relatedOrder: payload.bits.length }
+            ].filter(Boolean),
+            summary: `整体笑点密度 ${avg}/10，建议优先处理弱段并强化结尾回扣。`
+          };
+        }
+
+        function estimateScore(text) {
+          let score = 4.8;
+          if (/但|结果|后来|没想到|最后|真正/.test(text)) score += 1.4;
+          if (/游客|房租|歪脖子树|导航|北京/.test(text)) score += 1.1;
+          if (/[？?]/.test(text)) score += 0.4;
+          if (text.length >= 35 && text.length <= 150) score += 1;
+          if (text.length > 180) score -= 1.2;
+          return Math.max(1, Math.min(10, Number(score.toFixed(1))));
+        }
+
+        function extractKeywords(text) {
+          const stop = new Set(['这个', '那个', '就是', '因为', '所以', '然后', '我们', '你们']);
+          return (text.match(/[\u4e00-\u9fa5]{2,6}/g) || []).filter(word => !stop.has(word));
+        }
+
+        function countKeywords(text) {
+          return extractKeywords(text).reduce((map, word) => {
+            map[word] = (map[word] || 0) + 1;
+            return map;
+          }, {});
+        }
+
+        function detectScore(bits, words) {
+          const text = bits.map(bit => bit.text).join('');
+          return Math.max(1, Math.min(10, words.filter(word => text.includes(word)).length * 2));
+        }
+
+        function jumpToBit(index) {
+          const block = document.querySelectorAll('.bit-block')[index];
+          if (!block) return;
+          document.querySelectorAll('.bit-content').forEach(el => el.classList.remove('active'));
+          block.querySelector('.bit-content')?.classList.add('active');
+          block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function setAiStatus(text, busy) {
+          const sub = document.querySelector('.rp-sub');
+          if (sub) sub.textContent = text;
+          const pulse = document.querySelector('.ai-pulse');
+          if (pulse) pulse.style.background = busy ? 'var(--gold)' : 'var(--teal)';
+        }
+
+        function readCachedAnalysis() {
+          try {
+            return JSON.parse(localStorage.getItem(ANALYSIS_CACHE_KEY) || 'null');
+          } catch {
+            return null;
+          }
+        }
+
+        function removeModal(id) {
+          document.getElementById(id)?.remove();
+        }
+
+        function showToast(text) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#3ECFB0;color:#0D1A17;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9900;animation:fadein 0.3s ease;';
+          tip.textContent = text;
+          document.body.appendChild(tip);
+          setTimeout(() => tip.remove(), 1800);
+        }
+
+        function escapeHtml(text) {
+          return String(text ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initAdvancedAIAnalysisFeatures);
+        } else {
+          initAdvancedAIAnalysisFeatures();
+        }
+      })();
+    </script>
   </body>
 </html>
