@@ -54,8 +54,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid AI action request", issues: parsed.error.issues }, { status: 400 });
   }
 
-  const fallback = buildFallbackAction(parsed.data);
-
   try {
     const content = await chatCompletionText(
       [
@@ -77,14 +75,27 @@ export async function POST(request: Request) {
     );
 
     if (!content) {
-      return NextResponse.json({ ...fallback, source: "local" });
+      return NextResponse.json(
+        {
+          error: "AI action is not configured",
+          message: "请配置 OPENAI_API_KEY 和 OPENAI_BASE_URL 后再使用 AI 优化。"
+        },
+        { status: 503 }
+      );
     }
 
     const aiResult = aiActionResponseSchema.parse(parseJsonObject(content));
-    return NextResponse.json({ ...fallback, ...normalizeActionResult(aiResult), source: "openai" });
+    return NextResponse.json({ ...normalizeActionResult(aiResult), source: "ai" });
   } catch (error) {
-    console.error("AI action failed, falling back to local action:", error instanceof Error ? error.message : "unknown error");
-    return NextResponse.json({ ...fallback, source: "local", fallbackReason: "AI_ACTION_FAILED" });
+    console.error("AI action failed:", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json(
+      {
+        error: "AI action failed",
+        message: "AI 优化失败，请稍后重试或检查模型返回格式。",
+        detail: error instanceof Error ? error.message : "unknown error"
+      },
+      { status: 502 }
+    );
   }
 }
 
@@ -159,96 +170,6 @@ function normalizeActionResult(result: z.infer<typeof aiActionResponseSchema>) {
           }
     )
   };
-}
-
-function buildFallbackAction(input: z.infer<typeof aiActionRequestSchema>) {
-  const text = input.activeBit?.text || input.selectedText || input.prompt;
-  if (input.action === "premise") {
-    return {
-      message: "先把素材压成一个可写的 Premise：一个人处在某个压力里，却产生了反常态度。",
-      insertText: `Premise：我以为自己是在处理「${shortText(text)}」，其实是在证明我已经被这件事训练得很熟练。`,
-      type: "SETUP",
-      actions: [
-        { label: "找 5 个角度", prompt: "请基于这个 Premise 找 5 个喜剧角度" },
-        { label: "写 Setup", prompt: "请把这个 Premise 写成一个 Setup" }
-      ]
-    };
-  }
-  if (input.action === "angles") {
-    return {
-      message: "可以从身份错位、代价夸张、假装理性、童年经验和城市规训五个角度切。",
-      insertText: "角度1：我不是在生活，是在参加一场收费很高的城市适应性测试。\n角度2：成年人最荒诞的地方，是能把委屈解释成成长。",
-      type: "OBSERVATIONAL",
-      actions: [{ label: "选角度写段落", prompt: "请选择最强角度写成完整 Bit" }]
-    };
-  }
-  if (input.action === "setup") {
-    return {
-      message: "Setup 要短，只交代人物、场景和期待，不提前解释笑点。",
-      insertText: `我第一次遇到这件事的时候，还以为自己处理得挺成熟。后来我发现，我只是已经熟练到能提前猜到它下一步怎么折磨我。`,
-      type: "SETUP",
-      actions: [{ label: "生成 Punchline", prompt: "请基于这个 Setup 生成 Punchline" }]
-    };
-  }
-  if (input.action === "punchline") {
-    return {
-      message: "Punchline 的关键是把最反常的判断放到句尾。",
-      insertText: "我当时才明白，这不是生活给我的考验，这是生活给我的续费提醒。",
-      type: "PUNCHLINE",
-      actions: [{ label: "补 Tag", prompt: "请围绕这个 Punchline 补 3 个 Tag" }]
-    };
-  }
-  if (input.action === "tag") {
-    return {
-      message: "Tag 要沿着同一逻辑升级，短一点，像连续补刀。",
-      insertText: "而且它还不是一次性收费，是订阅制。你不成长，它也自动扣款。",
-      type: "TAGLINE",
-      actions: [{ label: "做 Callback", prompt: "请把这个笑点回扣到前文关键词" }]
-    };
-  }
-  if (input.action === "callback") {
-    return {
-      message: "我建议用一个身份回扣收尾：把前文高频词放到最后一句，形成闭环。",
-      insertText: "后来我才明白，真正让我留在这里的不是梦想，是每次想离开时，生活都会突然给我一个更荒诞的理由。",
-      type: "CALLBACK",
-      actions: [{ label: "换个更自嘲的角度", prompt: "请换成更自嘲的 Callback" }]
-    };
-  }
-  if (input.action === "expand") {
-    return {
-      message: "我把这个想法扩成了一个可继续打磨的段落。",
-      insertText: `${text}。真正好笑的不是这件事发生了，而是我当时居然认真地觉得：这可能就是成年人必须经历的成长。`,
-      type: "OBSERVATIONAL",
-      actions: [{ label: "再压缩一点", prompt: "请把这段压缩成更短的舞台版本" }]
-    };
-  }
-  if (input.action === "optimize" || input.action === "rewrite") {
-    return {
-      message: "建议压缩铺垫，把最反常的判断放到句尾。",
-      insertText: `${text} 但最荒诞的是，我以为这是生活给我的考验，后来发现这只是生活在提醒我：别太把自己当主角。`,
-      type: normalizeType(input.activeBit?.type),
-      actions: [{ label: "生成更强 Punchline", prompt: "请把这段改成更强的 Punchline" }]
-    };
-  }
-  if (input.action === "polish") {
-    return {
-      message: "润色重点是删解释、加停顿，把书面表达改成台上能说的话。",
-      insertText: `${shortText(text)}。停一下。你以为这是成长，其实这是生活在确认：这人还能继续扣费。`,
-      type: normalizeType(input.activeBit?.type),
-      actions: [{ label: "再狠一点", prompt: "请把这段润色得更狠一点" }]
-    };
-  }
-  return {
-    message: "我建议先明确铺垫、反转和回扣三步：前一句建立常识，后一句打破预期，最后用关键词收束。",
-    actions: [
-      { label: "生成示例", prompt: "请基于这个方向生成一个可插入的新 Bit" },
-      { label: "换个角度", prompt: "请换成更自嘲的角度分析" }
-    ]
-  };
-}
-
-function shortText(text: string) {
-  return text.replace(/\s+/g, " ").slice(0, 36);
 }
 
 function normalizeType(type?: string) {

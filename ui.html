@@ -7572,17 +7572,16 @@
               ...result,
               type: result.type || options.preferredType,
               insertText: result.insertText,
-              insertHtml: result.insertHtml
+              insertHtml: result.insertHtml,
+              targetOrder: options.activeBit?.order,
+              sourceAction: action
             };
-            normalized.generationId = recordGeneration(action, prompt, normalized, result.source || 'openai');
+            normalized.generationId = recordGeneration(action, prompt, normalized, result.source || 'ai');
             appendChatMessage('ai', result.message || fallbackMessage(action), normalized);
-            if (result.source === 'openai') showToast('AI 已生成');
-            else showToast('AI 已使用本地降级建议');
-          } catch {
-            const fallback = localFallback(action, prompt, options);
-            fallback.generationId = recordGeneration(action, prompt, fallback, 'local');
-            appendChatMessage('ai', fallback.message, fallback);
-            showToast('AI 请求失败，已使用本地建议');
+            showToast('AI 已生成');
+          } catch (error) {
+            appendChatMessage('ai', 'AI 优化失败，请检查模型配置或稍后重试。', { error: true });
+            showToast('AI 请求失败，未使用本地假数据');
           } finally {
             setTyping(false);
             scrollChat();
@@ -7599,10 +7598,12 @@
             row.innerHTML = `<div class="chat-ava me-av"><i class="fa-regular fa-user"></i></div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
           } else {
             const canInsert = action.insertText || action.insertHtml;
+            const canReplace = canInsert && action.targetOrder;
             const actions = canInsert
-              ? `<div class="chat-acts"><button class="ca-btn ok" data-real-ai-insert-after="1"><i class="fa-solid fa-check"></i> 插入当前</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
+              ? `<div class="chat-acts">${canReplace ? '<button class="ca-btn ok" data-real-ai-replace-current="1"><i class="fa-solid fa-check"></i> 替换当前</button>' : ''}<button class="ca-btn" data-real-ai-insert-after="1"><i class="fa-solid fa-plus"></i> 插入当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
               : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
             row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actions}</div>`;
+            row.querySelector('[data-real-ai-replace-current]')?.addEventListener('click', () => replaceCurrentBit(action));
             row.querySelector('[data-real-ai-insert-after]')?.addEventListener('click', () => insertGeneratedBit(action, 'after'));
             row.querySelector('[data-real-ai-insert-end]')?.addEventListener('click', () => insertGeneratedBit(action, 'end'));
             row.querySelector('[data-real-ai-copy]')?.addEventListener('click', () => {
@@ -7857,6 +7858,23 @@
           showToast(mode === 'after' ? '已插入当前段后' : '已插入末尾');
         }
 
+        function replaceCurrentBit(action) {
+          const html = action.insertHtml || escapeHtml(action.insertText || '');
+          if (!html) return;
+          const blocks = Array.from(document.querySelectorAll('.bit-block'));
+          const target = blocks[(Number(action.targetOrder) || 1) - 1] || findCurrentEditingBlock(blocks);
+          if (!target) return;
+          const textNode = target.querySelector('.bit-text');
+          if (!textNode) return;
+          textNode.innerHTML = html;
+          const duration = target.querySelector('.time-badge');
+          if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ${estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))}`;
+          setCurrentEditingBlock(target);
+          markGeneration(action.generationId || action.id, 'replaced-current');
+          textNode.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' }));
+          showToast('已替换当前段落');
+        }
+
         function findCurrentEditingBlock(existingBlocks) {
           const active = document.querySelector('.bit-content.active')?.closest('.bit-block');
           const focused = document.activeElement?.closest?.('.bit-block');
@@ -7947,22 +7965,6 @@
             counts[word] = (counts[word] || 0) + 1;
           });
           return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([word]) => word);
-        }
-
-        function localFallback(action, prompt, options) {
-          const base = options.selectedText || options.activeBit?.text || prompt;
-          if (action === 'callback') {
-            return {
-              message: '可以用一个身份回扣收尾，让前文关键词重新出现。',
-              insertText: '后来我才明白，真正留下来的不是我，是这些年每一个舍不得删掉的定位记录。',
-              type: 'CALLBACK'
-            };
-          }
-          return {
-            message: fallbackMessage(action),
-            insertText: `${base} 但真正荒诞的是，我以为这是生活给我的考验，后来发现这只是生活在测试我的自动续费能力。`,
-            type: options.preferredType || 'OBSERVATIONAL'
-          };
         }
 
         function fallbackMessage(action) {
