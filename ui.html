@@ -1711,6 +1711,34 @@
         border-radius: 4px 11px 11px 11px;
       }
 
+      .ai-result-card {
+        max-width: 238px;
+        margin-top: 7px;
+        padding: 10px 11px;
+        background: rgba(62, 207, 176, 0.07);
+        border: 1px solid rgba(62, 207, 176, 0.24);
+        border-radius: 10px;
+        color: var(--text-soft);
+        font-size: 12px;
+        line-height: 1.65;
+      }
+
+      .ai-result-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .04em;
+        color: var(--teal);
+      }
+
+      .ai-result-text {
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
       .chat-bub.me {
         background: linear-gradient(135deg, var(--purple), var(--pink));
         color: white;
@@ -4972,6 +5000,7 @@
         function bindAiReplacementActions() {
           document.addEventListener('click', event => {
             const aiBubble = event.target.closest?.('.chat-row:not(.me)');
+            if (aiBubble?.querySelector('[data-real-ai-replace-current], [data-real-ai-insert-after], .ai-result-card')) return;
             if (!aiBubble || aiBubble.querySelector('[data-replace-current-bit]')) return;
             const acts = aiBubble.querySelector('.chat-acts');
             if (!acts) return;
@@ -7599,10 +7628,14 @@
           } else {
             const canInsert = action.insertText || action.insertHtml;
             const canReplace = canInsert && action.targetOrder;
+            const resultText = canInsert ? stripHtml(action.insertHtml || action.insertText || '') : '';
+            const resultCard = resultText
+              ? `<div class="ai-result-card"><div class="ai-result-head"><i class="fa-solid fa-file-pen"></i> 生成结果预览</div><div class="ai-result-text">${escapeHtml(resultText)}</div></div>`
+              : '';
             const actions = canInsert
               ? `<div class="chat-acts">${canReplace ? '<button class="ca-btn ok" data-real-ai-replace-current="1"><i class="fa-solid fa-check"></i> 替换当前</button>' : ''}<button class="ca-btn" data-real-ai-insert-after="1"><i class="fa-solid fa-plus"></i> 插入当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
               : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
-            row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${actions}</div>`;
+            row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${resultCard}${actions}</div>`;
             row.querySelector('[data-real-ai-replace-current]')?.addEventListener('click', () => replaceCurrentBit(action));
             row.querySelector('[data-real-ai-insert-after]')?.addEventListener('click', () => insertGeneratedBit(action, 'after'));
             row.querySelector('[data-real-ai-insert-end]')?.addEventListener('click', () => insertGeneratedBit(action, 'end'));
