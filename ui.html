@@ -882,13 +882,23 @@
         transition: width 1s ease;
       }
 
+      .score-fill.pending {
+        width: 100% !important;
+        opacity: .28;
+        background: repeating-linear-gradient(90deg, rgba(245, 200, 66, .45) 0 6px, transparent 6px 10px) !important;
+      }
+
       .score-val {
         font-size: 10px;
         color: var(--text-soft);
         font-weight: 700;
-        width: 28px;
+        width: 38px;
         text-align: right;
         flex-shrink: 0;
+      }
+
+      .score-val.pending {
+        color: var(--gold);
       }
 
       /* 内容块 */
@@ -3072,8 +3082,8 @@
     </div>
     <div class="bit-score-bar">
       <span class="score-label">预期笑声</span>
-      <div class="score-track"><div class="score-fill" style="width:0;background:${c};transition:width 1s ease;"></div></div>
-      <span class="score-val">—</span>
+      <div class="score-track"><div class="score-fill pending" style="background:${c};transition:width 1s ease;"></div></div>
+      <span class="score-val pending">待分析</span>
     </div>
     <div class="bit-content" style="padding-left:54px;">
       <div class="bit-num">${String(bitCount).padStart(2,'0')}</div>
@@ -3465,7 +3475,8 @@
         function renderBit(bit) {
           const meta = bitTypes[bit.type] || bitTypes.SETUP;
           const score = bit.score || '—';
-          const scoreWidth = String(score).includes('%') ? score : '0%';
+          const hasScore = String(score).includes('%');
+          const scoreWidth = hasScore ? score : '100%';
           const reactions = bit.reactions || { laugh: 0, smile: 0, flat: 0 };
           const div = document.createElement('div');
           div.className = 'bit-block fade-in';
@@ -3482,8 +3493,8 @@
             </div>
             <div class="bit-score-bar">
               <span class="score-label">预期笑声</span>
-              <div class="score-track"><div class="score-fill" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
-              <span class="score-val">${score}</span>
+              <div class="score-track"><div class="score-fill ${hasScore ? '' : 'pending'}" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
+              <span class="score-val ${hasScore ? '' : 'pending'}">${hasScore ? score : '待分析'}</span>
             </div>
             <div class="bit-content" style="padding-left:54px;">
               <div class="bit-num">00</div>
@@ -5205,8 +5216,14 @@
               const score = estimateScore(text);
               const val = block.querySelector('.score-val');
               const fill = block.querySelector('.score-fill');
-              if (val) val.textContent = `${score}%`;
-              if (fill) fill.style.width = `${score}%`;
+              if (val) {
+                val.textContent = `${score}%`;
+                val.classList.remove('pending');
+              }
+              if (fill) {
+                fill.style.width = `${score}%`;
+                fill.classList.remove('pending');
+              }
             });
           }
           if (action === 'trim') {
@@ -6390,7 +6407,8 @@
           const meta = bitTypeMeta(bit.type);
           const reactions = bit.reactions || { laugh: 0, smile: 0, flat: 0 };
           const score = bit.score || '—';
-          const scoreWidth = String(score).includes('%') ? score : '0%';
+          const hasScore = String(score).includes('%');
+          const scoreWidth = hasScore ? score : '100%';
           const div = document.createElement('div');
           div.className = 'bit-block fade-in';
           div.innerHTML = `
@@ -6406,8 +6424,8 @@
             </div>
             <div class="bit-score-bar">
               <span class="score-label">预期笑声</span>
-              <div class="score-track"><div class="score-fill" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
-              <span class="score-val">${escapeHtml(score)}</span>
+              <div class="score-track"><div class="score-fill ${hasScore ? '' : 'pending'}" style="width:${scoreWidth};background:linear-gradient(to right,#9B6DFF,#FF6B9D);"></div></div>
+              <span class="score-val ${hasScore ? '' : 'pending'}">${hasScore ? escapeHtml(score) : '待分析'}</span>
             </div>
             <div class="bit-content" style="padding-left:54px;">
               <div class="bit-num">00</div>
@@ -7223,8 +7241,16 @@
           analysis.analyzedBits.forEach((item, index) => {
             const block = document.querySelectorAll('.bit-block')[index];
             const score = block?.querySelector('.score-val');
+            const fill = block?.querySelector('.score-fill');
             const duration = block?.querySelector('.time-badge');
-            if (score) score.textContent = `${Math.round(item.score * 10)}%`;
+            if (score) {
+              score.textContent = `${Math.round(item.score * 10)}%`;
+              score.classList.remove('pending');
+            }
+            if (fill) {
+              fill.style.width = `${Math.round(item.score * 10)}%`;
+              fill.classList.remove('pending');
+            }
             if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ~${Math.max(8, Math.round(item.durationSeconds))}秒`;
           });
         }
@@ -7882,12 +7908,14 @@
           });
           const after = Array.from(document.querySelectorAll('.bit-block'));
           const created = after.find(block => !before.includes(block)) || after[after.length - 1];
+          if (created) markScorePending(created);
           if (mode === 'after' && created) {
             if (target && target !== created) target.after(created);
             setCurrentEditingBlock(created);
             renumberBits();
           }
           markGeneration(action.generationId || action.id, mode === 'after' ? 'inserted-after' : 'inserted-end');
+          setTimeout(() => window.runRiffAiAnalysis?.({ silent: true }), 250);
           showToast(mode === 'after' ? '已插入当前段后' : '已插入末尾');
         }
 
@@ -7902,10 +7930,24 @@
           textNode.innerHTML = html;
           const duration = target.querySelector('.time-badge');
           if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ${estimateDurationLabel(action.insertText || stripHtml(action.insertHtml || ''))}`;
+          markScorePending(target);
           setCurrentEditingBlock(target);
           markGeneration(action.generationId || action.id, 'replaced-current');
           textNode.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' }));
           showToast('已替换当前段落');
+        }
+
+        function markScorePending(block) {
+          const score = block?.querySelector('.score-val');
+          const fill = block?.querySelector('.score-fill');
+          if (score) {
+            score.textContent = '待分析';
+            score.classList.add('pending');
+          }
+          if (fill) {
+            fill.style.width = '100%';
+            fill.classList.add('pending');
+          }
         }
 
         function findCurrentEditingBlock(existingBlocks) {
@@ -8467,6 +8509,8 @@
 
         function renderRealBit(bit) {
           const meta = bitTypeMeta(bit.type);
+          const score = bit.score || '—';
+          const hasScore = String(score).includes('%');
           const div = document.createElement('div');
           div.className = 'bit-block fade-in';
           div.innerHTML = `
@@ -8482,8 +8526,8 @@
             </div>
             <div class="bit-score-bar">
               <span class="score-label">预期笑声</span>
-              <div class="score-track"><div class="score-fill" style="width:${escapeHtml(bit.score || '0%')};background:linear-gradient(to right,var(--purple),var(--pink));"></div></div>
-              <span class="score-val">${escapeHtml(bit.score || '—')}</span>
+              <div class="score-track"><div class="score-fill ${hasScore ? '' : 'pending'}" style="width:${hasScore ? escapeHtml(score) : '100%'};background:linear-gradient(to right,var(--purple),var(--pink));"></div></div>
+              <span class="score-val ${hasScore ? '' : 'pending'}">${hasScore ? escapeHtml(score) : '待分析'}</span>
             </div>
             <div class="bit-content" style="padding-left:54px;">
               <div class="bit-num">00</div>
