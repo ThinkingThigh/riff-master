@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { chatCompletionText, parseJsonObject } from "@/lib/server/ai-client";
 
+const bitTypes = ["SETUP", "PUNCHLINE", "TAGLINE", "CALLBACK", "OBSERVATIONAL", "SELF_DEPRECATION"] as const;
+
 const generateShowRequestSchema = z.object({
   topic: z.string().min(1),
   style: z.string().optional(),
@@ -18,11 +20,11 @@ const generatedShowSchema = z.object({
   materials: z.array(z.string()).optional(),
   bits: z.array(
     z.object({
-      type: z.enum(["SETUP", "PUNCHLINE", "TAGLINE", "CALLBACK", "OBSERVATIONAL", "SELF_DEPRECATION"]),
+      type: z.enum(bitTypes),
       text: z.string(),
       note: z.string().optional()
     })
-  )
+  ).min(1)
 });
 
 export async function POST(request: Request) {
@@ -32,8 +34,6 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid show generation request", issues: parsed.error.issues }, { status: 400 });
   }
-
-  const fallback = buildFallbackShow(parsed.data);
 
   try {
     const content = await chatCompletionText(
@@ -56,13 +56,28 @@ export async function POST(request: Request) {
       { temperature: 0.6, maxTokens: 2200, timeoutMs: 90000 }
     );
 
-    if (!content) return NextResponse.json({ ...fallback, source: "local" });
+    if (!content) {
+      return NextResponse.json(
+        {
+          error: "AI show generation is not configured",
+          message: "请配置 OPENAI_API_KEY 和 OPENAI_BASE_URL 后再生成脱口秀。"
+        },
+        { status: 503 }
+      );
+    }
 
-    const generated = generatedShowSchema.parse(parseJsonObject(content));
-    return NextResponse.json({ ...normalizeShow(generated), source: "openai" });
+    const generated = generatedShowSchema.parse(normalizeModelShow(parseJsonObject(content)));
+    return NextResponse.json({ ...normalizeShow(generated), source: "ai" });
   } catch (error) {
-    console.error("AI show generation failed, falling back to local show:", error instanceof Error ? error.message : "unknown error");
-    return NextResponse.json({ ...fallback, source: "local", fallbackReason: "AI_SHOW_FAILED" });
+    console.error("AI show generation failed:", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json(
+      {
+        error: "AI show generation failed",
+        message: "AI 生成失败，请稍后重试或检查模型返回格式。",
+        detail: error instanceof Error ? error.message : "unknown error"
+      },
+      { status: 502 }
+    );
   }
 }
 
@@ -75,7 +90,7 @@ function buildPrompt(input: z.infer<typeof generateShowRequestSchema>) {
       "premise 一句话说明主题、处境、真实态度和冲突。",
       "outline 给 5-8 个结构节点。",
       "bits 生成 8-12 段，每段 40-140 字。",
-      "每段 type 从 SETUP/PUNCHLINE/TAGLINE/CALLBACK/OBSERVATIONAL/SELF_DEPRECATION 选择。",
+      "每段 type 必须严格从 SETUP/PUNCHLINE/TAGLINE/CALLBACK/OBSERVATIONAL/SELF_DEPRECATION 中选择，不允许使用 HOOK、PREMISE、TAG、TRANSITION 等其他值。",
       "前两段要有开场 Hook 和 Premise。",
       "中间要有具体场景、人物关系和反常观察。",
       "至少 2 段 PUNCHLINE，至少 2 段 TAGLINE，最后必须有 CALLBACK。",
@@ -91,6 +106,77 @@ function buildPrompt(input: z.infer<typeof generateShowRequestSchema>) {
   });
 }
 
+function normalizeModelShow(raw: unknown) {
+  const record = isRecord(raw) ? raw : {};
+  const bits = Array.isArray(record.bits) ? record.bits : [];
+  return {
+    ...record,
+    title: stringOrDefault(record.title, "未命名节目"),
+    premise: stringOrDefault(record.premise, ""),
+    outline: Array.isArray(record.outline) ? record.outline.map(String).filter(Boolean) : [],
+    materials: Array.isArray(record.materials) ? record.materials.map(String).filter(Boolean) : [],
+    bits: bits.map((bit, index) => normalizeModelBit(bit, index)).filter((bit) => bit.text.trim())
+  };
+}
+
+function normalizeModelBit(raw: unknown, index: number) {
+  const bit = isRecord(raw) ? raw : {};
+  const text = stringOrDefault(bit.text ?? bit.content ?? bit.html ?? bit.line, "");
+  return {
+    type: normalizeBitType(bit.type, index),
+    text,
+    note: typeof bit.note === "string" ? bit.note : undefined
+  };
+}
+
+function normalizeBitType(value: unknown, index: number): (typeof bitTypes)[number] {
+  const normalized = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  const direct = bitTypes.find((type) => type === normalized);
+  if (direct) return direct;
+
+  const aliases: Record<string, (typeof bitTypes)[number]> = {
+    HOOK: "SETUP",
+    OPENING: "SETUP",
+    OPENER: "SETUP",
+    PREMISE: "SETUP",
+    INTRO: "SETUP",
+    INTRODUCTION: "SETUP",
+    SET_UP: "SETUP",
+    PUNCH: "PUNCHLINE",
+    PUNCH_LINE: "PUNCHLINE",
+    JOKE: "PUNCHLINE",
+    TAG: "TAGLINE",
+    TAG_LINE: "TAGLINE",
+    CALLBACK_LINE: "CALLBACK",
+    CALL_BACK: "CALLBACK",
+    OBSERVATION: "OBSERVATIONAL",
+    OBSERVATIONAL_COMEDY: "OBSERVATIONAL",
+    SELF_DEPRECATION: "SELF_DEPRECATION",
+    SELF_DEPRECATING: "SELF_DEPRECATION",
+    SELF_MOCKING: "SELF_DEPRECATION",
+    TRANSITION: "OBSERVATIONAL",
+    BRIDGE: "OBSERVATIONAL",
+    CLOSING: "CALLBACK",
+    ENDING: "CALLBACK"
+  };
+
+  if (aliases[normalized]) return aliases[normalized];
+  if (index === 0) return "SETUP";
+  return "OBSERVATIONAL";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function stringOrDefault(value: unknown, fallback: string) {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
 function normalizeShow(show: z.infer<typeof generatedShowSchema>) {
   return {
     title: show.title,
@@ -101,42 +187,8 @@ function normalizeShow(show: z.infer<typeof generatedShowSchema>) {
       ...bit,
       html: escapeHtml(bit.text),
       duration: `~${Math.max(10, Math.round(bit.text.length / 4))}秒`,
-      score: bit.type === "PUNCHLINE" || bit.type === "CALLBACK" ? "82%" : "—"
+      score: "—"
     }))
-  };
-}
-
-function buildFallbackShow(input: z.infer<typeof generateShowRequestSchema>) {
-  const topic = input.topic.trim();
-  return {
-    title: `${topic.slice(0, 12)}这件事`,
-    premise: `我以为自己是在讲${topic}，其实是在讲一个人如何把荒诞解释成成长。`,
-    outline: ["开场 Hook", "真实处境", "反常观察", "第一次升级", "更私人化的自嘲", "Callback 收尾"],
-    materials: [topic, input.style || "观察喜剧", input.audience || "普通观众"],
-    bits: [
-      {
-        type: "SETUP",
-        text: `我最近一直在想${topic}这件事。最可怕的不是它发生了，而是我发现自己已经熟练到可以提前预测它怎么折磨我。`,
-        html: escapeHtml(`我最近一直在想${topic}这件事。最可怕的不是它发生了，而是我发现自己已经熟练到可以提前预测它怎么折磨我。`),
-        duration: "~32秒",
-        score: "—"
-      },
-      {
-        type: "PUNCHLINE",
-        text: "这不是生活给我的考验，这是生活给我的续费提醒。",
-        html: escapeHtml("这不是生活给我的考验，这是生活给我的续费提醒。"),
-        duration: "~14秒",
-        score: "82%"
-      },
-      {
-        type: "CALLBACK",
-        text: `所以我现在看${topic}，已经没有情绪了。我只想问一句：这个体验包，能不能取消自动续费？`,
-        html: escapeHtml(`所以我现在看${topic}，已经没有情绪了。我只想问一句：这个体验包，能不能取消自动续费？`),
-        duration: "~28秒",
-        score: "86%"
-      }
-    ],
-    source: "local"
   };
 }
 
