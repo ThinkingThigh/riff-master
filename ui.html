@@ -7693,24 +7693,54 @@
               showToast('已复制 AI 内容');
             });
             row.querySelector('[data-real-ai-retry]')?.addEventListener('click', () => {
-              rerunAIWithFeedback(action, text, '请再生成一版，保持同一个创作方向，但换一种表达和节奏。');
+              rerunAIWithFeedback(action, text, 'retry');
             });
             row.querySelector('[data-real-ai-not-funny]')?.addEventListener('click', () => {
-              rerunAIWithFeedback(action, text, '这版不好笑。请保留核心素材，但显著增强喜剧性：制造更清晰的误导、反转和态度，删掉解释，把 punchline 放到句尾，给一版更适合上台讲的版本。');
+              rerunAIWithFeedback(action, text, 'not-funny');
             });
             row.querySelector('[data-real-ai-new-angle]')?.addEventListener('click', () => {
-              rerunAIWithFeedback(action, text, '请换一个完全不同的喜剧角度重写，不要沿用上一版的包袱逻辑。优先尝试身份错位、荒谬升级、反常识观察或自嘲视角。');
+              rerunAIWithFeedback(action, text, 'new-angle');
             });
           }
           list.insertBefore(row, typing);
         }
 
-        function rerunAIWithFeedback(action, fallbackText, instruction) {
+        function rerunAIWithFeedback(action, fallbackText, feedbackType) {
           const sourceText = action.insertText || stripHtml(action.insertHtml || fallbackText);
-          runAIAction(action.type === 'CALLBACK' ? 'callback' : 'rewrite', `${instruction}\n\n上一版内容：${sourceText}`, {
+          const feedback = feedbackPrompt(feedbackType);
+          markGenerationFeedback(action.generationId || action.id, feedbackType);
+          runAIAction(rerunActionName(action), `${feedback.instruction}\n\n上一版内容：${sourceText}`, {
             selectedText: sourceText,
             preferredType: action.type
           });
+        }
+
+        function rerunActionName(action = {}) {
+          if (action.type === 'CALLBACK') return 'callback';
+          if (action.sourceAction) return action.sourceAction;
+          if (action.action) return action.action;
+          return 'rewrite';
+        }
+
+        function feedbackPrompt(type) {
+          const prompts = {
+            retry: {
+              label: '再来',
+              status: 'retry-requested',
+              instruction: '请再生成一版，保持同一个创作方向，但换一种表达和节奏。'
+            },
+            'not-funny': {
+              label: '不好笑',
+              status: 'not-funny-feedback',
+              instruction: '这版不好笑。请保留核心素材，但显著增强喜剧性：制造更清晰的误导、反转和态度，删掉解释，把 punchline 放到句尾，给一版更适合上台讲的版本。'
+            },
+            'new-angle': {
+              label: '换个角度',
+              status: 'new-angle-feedback',
+              instruction: '请换一个完全不同的喜剧角度重写，不要沿用上一版的包袱逻辑。优先尝试身份错位、荒谬升级、反常识观察或自嘲视角。'
+            }
+          };
+          return prompts[type] || prompts.retry;
         }
 
         function addAIHistoryButton() {
@@ -7900,10 +7930,15 @@
             }
             if (actionName === 'retry') {
               modal.remove();
-              runAIAction(record.action || 'rewrite', `请基于这条历史生成另一版：${record.insertText || record.message}`, {
-                selectedText: record.insertText || record.message,
-                preferredType: record.type
-              });
+              rerunAIWithFeedback(record, record.message, 'retry');
+            }
+            if (actionName === 'not-funny') {
+              modal.remove();
+              rerunAIWithFeedback(record, record.message, 'not-funny');
+            }
+            if (actionName === 'new-angle') {
+              modal.remove();
+              rerunAIWithFeedback(record, record.message, 'new-angle');
             }
           });
         }
@@ -7911,11 +7946,13 @@
         function historyCard(item) {
           const sourceColor = item.source === 'openai' ? 'var(--teal)' : 'var(--orange)';
           const content = item.insertText || stripHtml(item.insertHtml || item.message);
+          const status = historyStatusLabel(item);
           return `
             <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
                 <b style="font-size:12px;color:var(--purple);">${escapeHtml(actionLabel(item.action))}</b>
                 <span style="font-size:10px;color:${sourceColor};font-weight:900;">${escapeHtml(item.source || 'local')}</span>
+                ${item.feedbackLabel ? `<span style="font-size:10px;color:var(--gold);font-weight:900;">反馈：${escapeHtml(item.feedbackLabel)}</span>` : ''}
                 <span style="font-size:10px;color:var(--text-faint);margin-left:auto;">${new Date(item.createdAt).toLocaleString()}</span>
               </div>
               <div style="font-size:12px;color:var(--text-soft);line-height:1.65;margin-bottom:8px;">${escapeHtml(content).slice(0, 260)}</div>
@@ -7923,8 +7960,10 @@
                 <button class="ca-btn ok" data-ai-history-action="insert-after" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-check"></i> 插入当前</button>
                 <button class="ca-btn" data-ai-history-action="insert-end" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-plus"></i> 插入末尾</button>
                 <button class="ca-btn" data-ai-history-action="copy" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-regular fa-copy"></i> 复制</button>
-                <button class="ca-btn" data-ai-history-action="retry" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-rotate"></i> 再生成</button>
-                <span style="font-size:10px;color:var(--text-faint);align-self:center;margin-left:auto;">${escapeHtml(item.status || 'generated')}</span>
+                <button class="ca-btn" data-ai-history-action="retry" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-rotate"></i> 再来</button>
+                <button class="ca-btn" data-ai-history-action="not-funny" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-regular fa-face-frown"></i> 不好笑</button>
+                <button class="ca-btn" data-ai-history-action="new-angle" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-shuffle"></i> 换个角度</button>
+                <span style="font-size:10px;color:${status.color};align-self:center;margin-left:auto;">${escapeHtml(status.label)}</span>
               </div>
             </div>`;
         }
@@ -8026,6 +8065,19 @@
           localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(next));
         }
 
+        function markGenerationFeedback(id, feedbackType) {
+          if (!id) return;
+          const feedback = feedbackPrompt(feedbackType);
+          const next = readHistory().map(item => item.id === id ? {
+            ...item,
+            status: feedback.status,
+            feedbackType,
+            feedbackLabel: feedback.label,
+            updatedAt: new Date().toISOString()
+          } : item);
+          localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(next));
+        }
+
         function readHistory() {
           try {
             return JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]');
@@ -8043,6 +8095,21 @@
             repair: '修复方案',
             rewrite: '改写'
           }[action] || 'AI 生成';
+        }
+
+        function historyStatusLabel(item) {
+          const map = {
+            generated: ['已生成', 'var(--text-faint)'],
+            copied: ['已复制', 'var(--teal)'],
+            'inserted-after': ['已插入当前', 'var(--teal)'],
+            'inserted-end': ['已插入末尾', 'var(--teal)'],
+            'replaced-current': ['已替换', 'var(--teal)'],
+            'retry-requested': ['已要求再来', 'var(--gold)'],
+            'not-funny-feedback': ['已反馈不好笑', 'var(--orange)'],
+            'new-angle-feedback': ['已要求换角度', 'var(--purple)']
+          };
+          const [label, color] = map[item.status] || [item.status || '已生成', 'var(--text-faint)'];
+          return { label, color };
         }
 
         function collectShow() {
