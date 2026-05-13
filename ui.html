@@ -6954,6 +6954,7 @@
           localStorage.setItem(ANALYSIS_CACHE_KEY, JSON.stringify({ ...lastAnalysis, analyzedAt: new Date().toISOString() }));
           updateAnalysisPanel(lastAnalysis);
           updateBitScores(lastAnalysis);
+          notifyRealShowChanged('analysis-scores');
           if (!options.silent) showToast('AI 分析已更新');
           if (options.openReport) openAiAnalysisReport(lastAnalysis);
           if (options.chatSummary) appendAnalysisChat(lastAnalysis);
@@ -7243,16 +7244,37 @@
             const score = block?.querySelector('.score-val');
             const fill = block?.querySelector('.score-fill');
             const duration = block?.querySelector('.time-badge');
+            const percent = scoreToPercent(item.score);
+            const seconds = durationToSeconds(item.durationSeconds, block);
             if (score) {
-              score.textContent = `${Math.round(item.score * 10)}%`;
+              score.textContent = `${percent}%`;
               score.classList.remove('pending');
             }
             if (fill) {
-              fill.style.width = `${Math.round(item.score * 10)}%`;
+              fill.style.width = `${percent}%`;
               fill.classList.remove('pending');
             }
-            if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ~${Math.max(8, Math.round(item.durationSeconds))}秒`;
+            if (duration) duration.innerHTML = `<i class="fa-regular fa-clock" style="font-size:9px;"></i> ~${seconds}秒`;
           });
+        }
+
+        function scoreToPercent(score) {
+          const value = Number(score);
+          if (!Number.isFinite(value)) return 0;
+          return Math.max(0, Math.min(100, Math.round(value * 10)));
+        }
+
+        function durationToSeconds(value, block) {
+          const parsed = Number(value);
+          if (Number.isFinite(parsed) && parsed > 0) return Math.max(8, Math.round(parsed));
+          const text = block?.querySelector('.bit-text')?.innerText || '';
+          return Math.max(8, Math.round(text.length / 4));
+        }
+
+        function notifyRealShowChanged(reason) {
+          document.dispatchEvent(new CustomEvent('riffmaster:real-show-changed', {
+            detail: { reason, at: Date.now() }
+          }));
         }
 
         function openAiAnalysisReport(analysis) {
@@ -7659,8 +7681,8 @@
               ? `<div class="ai-result-card"><div class="ai-result-head"><i class="fa-solid fa-file-pen"></i> 生成结果预览</div><div class="ai-result-text">${escapeHtml(resultText)}</div></div>`
               : '';
             const actions = canInsert
-              ? `<div class="chat-acts">${canReplace ? '<button class="ca-btn ok" data-real-ai-replace-current="1"><i class="fa-solid fa-check"></i> 替换当前</button>' : ''}<button class="ca-btn" data-real-ai-insert-after="1"><i class="fa-solid fa-plus"></i> 插入当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button></div>`
-              : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 换个角度</button></div>`;
+              ? `<div class="chat-acts">${canReplace ? '<button class="ca-btn ok" data-real-ai-replace-current="1"><i class="fa-solid fa-check"></i> 替换当前</button>' : ''}<button class="ca-btn" data-real-ai-insert-after="1"><i class="fa-solid fa-plus"></i> 插入当前后</button><button class="ca-btn" data-real-ai-insert-end="1"><i class="fa-solid fa-plus"></i> 末尾</button><button class="ca-btn" data-real-ai-copy="1"><i class="fa-regular fa-copy"></i> 复制</button><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button><button class="ca-btn" data-real-ai-not-funny="1"><i class="fa-regular fa-face-frown"></i> 不好笑</button><button class="ca-btn" data-real-ai-new-angle="1"><i class="fa-solid fa-shuffle"></i> 换个角度</button></div>`
+              : `<div class="chat-acts"><button class="ca-btn" data-real-ai-retry="1"><i class="fa-solid fa-rotate"></i> 再来</button><button class="ca-btn" data-real-ai-not-funny="1"><i class="fa-regular fa-face-frown"></i> 不好笑</button><button class="ca-btn" data-real-ai-new-angle="1"><i class="fa-solid fa-shuffle"></i> 换个角度</button></div>`;
             row.innerHTML = `<div class="chat-ava ai-av"><i class="fa-solid fa-robot" style="font-size:8px;"></i></div><div><div class="chat-bub ai">${escapeHtml(text)}</div>${resultCard}${actions}</div>`;
             row.querySelector('[data-real-ai-replace-current]')?.addEventListener('click', () => replaceCurrentBit(action));
             row.querySelector('[data-real-ai-insert-after]')?.addEventListener('click', () => insertGeneratedBit(action, 'after'));
@@ -7671,13 +7693,24 @@
               showToast('已复制 AI 内容');
             });
             row.querySelector('[data-real-ai-retry]')?.addEventListener('click', () => {
-              runAIAction(action.type === 'CALLBACK' ? 'callback' : 'rewrite', `请换一个角度重写：${action.insertText || text}`, {
-                selectedText: action.insertText || text,
-                preferredType: action.type
-              });
+              rerunAIWithFeedback(action, text, '请再生成一版，保持同一个创作方向，但换一种表达和节奏。');
+            });
+            row.querySelector('[data-real-ai-not-funny]')?.addEventListener('click', () => {
+              rerunAIWithFeedback(action, text, '这版不好笑。请保留核心素材，但显著增强喜剧性：制造更清晰的误导、反转和态度，删掉解释，把 punchline 放到句尾，给一版更适合上台讲的版本。');
+            });
+            row.querySelector('[data-real-ai-new-angle]')?.addEventListener('click', () => {
+              rerunAIWithFeedback(action, text, '请换一个完全不同的喜剧角度重写，不要沿用上一版的包袱逻辑。优先尝试身份错位、荒谬升级、反常识观察或自嘲视角。');
             });
           }
           list.insertBefore(row, typing);
+        }
+
+        function rerunAIWithFeedback(action, fallbackText, instruction) {
+          const sourceText = action.insertText || stripHtml(action.insertHtml || fallbackText);
+          runAIAction(action.type === 'CALLBACK' ? 'callback' : 'rewrite', `${instruction}\n\n上一版内容：${sourceText}`, {
+            selectedText: sourceText,
+            preferredType: action.type
+          });
         }
 
         function addAIHistoryButton() {
@@ -7915,6 +7948,7 @@
             renumberBits();
           }
           markGeneration(action.generationId || action.id, mode === 'after' ? 'inserted-after' : 'inserted-end');
+          notifyRealShowChanged('ai-insert');
           setTimeout(() => window.runRiffAiAnalysis?.({ silent: true }), 250);
           showToast(mode === 'after' ? '已插入当前段后' : '已插入末尾');
         }
@@ -7934,6 +7968,7 @@
           setCurrentEditingBlock(target);
           markGeneration(action.generationId || action.id, 'replaced-current');
           textNode.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertReplacementText' }));
+          notifyRealShowChanged('ai-replace');
           showToast('已替换当前段落');
         }
 
@@ -7948,6 +7983,12 @@
             fill.style.width = '100%';
             fill.classList.add('pending');
           }
+        }
+
+        function notifyRealShowChanged(reason) {
+          document.dispatchEvent(new CustomEvent('riffmaster:real-show-changed', {
+            detail: { reason, at: Date.now() }
+          }));
         }
 
         function findCurrentEditingBlock(existingBlocks) {
@@ -8256,7 +8297,7 @@
             bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
               type: detectType(block),
               html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
-              score: block.querySelector('.score-val')?.textContent || '—',
+              score: normalizeScoreForSave(block.querySelector('.score-val')?.textContent),
               duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
               reactions: {
                 laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
@@ -8265,6 +8306,11 @@
               }
             }))
           };
+        }
+
+        function normalizeScoreForSave(score) {
+          const value = String(score || '').trim();
+          return value.includes('%') ? value : '—';
         }
 
         function detectType(block) {
@@ -8621,16 +8667,25 @@
 
         function patchSaveToRealApi() {
           let timer = null;
-          document.addEventListener('input', event => {
-            if (!event.target.matches?.('.bit-text, .show-title-input')) return;
+          const schedulePersist = () => {
             clearTimeout(timer);
             timer = setTimeout(() => persistRealShow(serializeRealShow()), 700);
+          };
+          document.addEventListener('input', event => {
+            if (!event.target.matches?.('.bit-text, .show-title-input')) return;
+            schedulePersist();
           });
           document.addEventListener('click', event => {
-            if (event.target.closest?.('.reaction-btn, .bit-act-btn, [data-real-ai-insert-after], [data-real-ai-insert-end]')) {
-              clearTimeout(timer);
-              timer = setTimeout(() => persistRealShow(serializeRealShow()), 900);
+            if (event.target.closest?.('.reaction-btn, .bit-act-btn, [data-real-ai-insert-after], [data-real-ai-insert-end], [data-real-ai-replace-current]')) {
+              schedulePersist();
             }
+          });
+          document.addEventListener('riffmaster:real-show-changed', () => {
+            const bits = document.querySelectorAll('.bit-block');
+            if (bits.length) removeEmptyState();
+            else renderEmptyState();
+            updateRealStats();
+            schedulePersist();
           });
         }
 
@@ -8711,7 +8766,7 @@
             bits: Array.from(document.querySelectorAll('.bit-block')).map(block => ({
               type: detectType(block),
               html: sanitizeHtml(block.querySelector('.bit-text')?.innerHTML || ''),
-              score: block.querySelector('.score-val')?.textContent || '—',
+              score: normalizeScoreForSave(block.querySelector('.score-val')?.textContent),
               duration: block.querySelector('.time-badge')?.textContent.trim() || '—',
               reactions: {
                 laugh: Number(block.querySelectorAll('.reaction-btn b')[0]?.textContent || 0),
@@ -8720,6 +8775,11 @@
               }
             }))
           };
+        }
+
+        function normalizeScoreForSave(score) {
+          const value = String(score || '').trim();
+          return value.includes('%') ? value : '—';
         }
 
         function updateRealStats() {
