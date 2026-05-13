@@ -7675,7 +7675,7 @@
             row.innerHTML = `<div class="chat-ava me-av"><i class="fa-regular fa-user"></i></div><div><div class="chat-bub me">${escapeHtml(text)}</div></div>`;
           } else {
             const canInsert = action.insertText || action.insertHtml;
-            const canReplace = canInsert && action.targetOrder;
+            const canReplace = canInsert;
             const resultText = canInsert ? stripHtml(action.insertHtml || action.insertText || '') : '';
             const resultCard = resultText
               ? `<div class="ai-result-card"><div class="ai-result-head"><i class="fa-solid fa-file-pen"></i> 生成结果预览</div><div class="ai-result-text">${escapeHtml(resultText)}</div></div>`
@@ -7940,6 +7940,10 @@
               modal.remove();
               rerunAIWithFeedback(record, record.message, 'new-angle');
             }
+            if (actionName === 'replace-current') {
+              modal.remove();
+              replaceCurrentBit(record);
+            }
           });
         }
 
@@ -7947,6 +7951,10 @@
           const sourceColor = item.source === 'openai' ? 'var(--teal)' : 'var(--orange)';
           const content = item.insertText || stripHtml(item.insertHtml || item.message);
           const status = historyStatusLabel(item);
+          const canReplaceHistory = Boolean(item.insertText || item.insertHtml);
+          const replaceBtn = canReplaceHistory
+            ? `<button class="ca-btn" data-ai-history-action="replace-current" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-arrows-rotate"></i> 替换当前段</button>`
+            : '';
           return `
             <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:12px;padding:12px;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
@@ -7957,6 +7965,7 @@
               </div>
               <div style="font-size:12px;color:var(--text-soft);line-height:1.65;margin-bottom:8px;">${escapeHtml(content).slice(0, 260)}</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${replaceBtn}
                 <button class="ca-btn ok" data-ai-history-action="insert-after" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-check"></i> 插入当前</button>
                 <button class="ca-btn" data-ai-history-action="insert-end" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-solid fa-plus"></i> 插入末尾</button>
                 <button class="ca-btn" data-ai-history-action="copy" data-ai-history-id="${escapeHtml(item.id)}"><i class="fa-regular fa-copy"></i> 复制</button>
@@ -7996,7 +8005,9 @@
           const html = action.insertHtml || escapeHtml(action.insertText || '');
           if (!html) return;
           const blocks = Array.from(document.querySelectorAll('.bit-block'));
-          const target = blocks[(Number(action.targetOrder) || 1) - 1] || findCurrentEditingBlock(blocks);
+          const order = Number(action.targetOrder);
+          const byOrder = Number.isFinite(order) && order > 0 ? blocks[order - 1] : null;
+          const target = byOrder || findCurrentEditingBlock(blocks);
           if (!target) return;
           const textNode = target.querySelector('.bit-text');
           if (!textNode) return;
@@ -8052,6 +8063,8 @@
             message: result.message || '',
             insertText: result.insertText,
             insertHtml: result.insertHtml,
+            targetOrder: result.targetOrder,
+            sourceAction: result.sourceAction,
             createdAt: new Date().toISOString()
           };
           const next = [item, ...readHistory()].slice(0, 40);
@@ -8302,6 +8315,7 @@
           if (didDrop) {
             renumberBits();
             persistDragOrder();
+            document.dispatchEvent(new CustomEvent('riffmaster:real-show-changed', { detail: { reason: 'drag-reorder', at: Date.now() } }));
             setActiveBlock(draggedBlock);
             showToast('段落顺序已更新');
           }
